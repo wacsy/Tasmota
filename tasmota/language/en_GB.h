@@ -87,6 +87,7 @@
 #define D_DO "Disolved Oxygen"
 #define D_DONE "Done"
 #define D_DST_TIME "DST"
+#define D_LOC_TIME "Local Time"
 #define D_EC "EC"
 #define D_ECO2 "eCO₂"
 #define D_EMULATION "Emulation"

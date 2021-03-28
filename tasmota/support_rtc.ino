@@ -183,9 +183,9 @@ String GetDateAndTime(uint8_t time_type)
     case DT_UTC:
       time = Rtc.utc_time;
       break;
-//    case DT_LOCALNOTZ:  // Is default anyway but allows for not appendig timezone
-//      time = Rtc.local_time;
-//      break;
+      //    case DT_LOCALNOTZ:  // Is default anyway but allows for not appendig timezone
+      //      time = Rtc.local_time;
+      //      break;
     case DT_DST:
       time = Rtc.daylight_saving_time;
       break;

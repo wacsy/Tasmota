@@ -87,6 +87,7 @@
 #define D_DO "Disolved Oxygen"
 #define D_DONE "完成"
 #define D_DST_TIME "DST"
+#define D_LOC_TIME "本地时间"
 #define D_EC "EC"
 #define D_ECO2 "eCO₂"
 #define D_EMULATION "设备模拟"

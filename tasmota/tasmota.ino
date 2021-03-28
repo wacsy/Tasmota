@@ -178,13 +178,13 @@ struct {
   uint8_t module_type;                      // Current copy of Settings.module or user template type
   uint8_t last_source;                      // Last command source
   uint8_t shutters_present;                 // Number of actual define shutters
-//  uint8_t prepped_loglevel;                 // Delayed log level message
+  //  uint8_t prepped_loglevel;                 // Delayed log level message
 
-#ifndef SUPPORT_IF_STATEMENT
-  uint8_t backlog_index;                    // Command backlog index
-  uint8_t backlog_pointer;                  // Command backlog pointer
-  String backlog[MAX_BACKLOG];              // Command backlog buffer
-#endif
+  #ifndef SUPPORT_IF_STATEMENT
+    uint8_t backlog_index;                    // Command backlog index
+    uint8_t backlog_pointer;                  // Command backlog pointer
+    String backlog[MAX_BACKLOG];              // Command backlog buffer
+  #endif
 
   char version[16];                         // Composed version string like 255.255.255.255
   char image_name[33];                      // Code image and/or commit
@@ -209,11 +209,11 @@ struct {
 \*********************************************************************************************/
 
 void setup(void) {
-#ifdef ESP32
-#ifdef DISABLE_ESP32_BROWNOUT
-  DisableBrownout();      // Workaround possible weak LDO resulting in brownout detection during Wifi connection
-#endif
-#endif
+  #ifdef ESP32
+  #ifdef DISABLE_ESP32_BROWNOUT
+    DisableBrownout();      // Workaround possible weak LDO resulting in brownout detection during Wifi connection
+  #endif
+  #endif
 
   RtcPreInit();
   SettingsInit();
@@ -232,15 +232,15 @@ void setup(void) {
   if (!RtcRebootValid()) {
     RtcReboot.fast_reboot_count = 0;
   }
-#ifdef FIRMWARE_MINIMAL
-  RtcReboot.fast_reboot_count = 0;    // Disable fast reboot and quick power cycle detection
-#else
-  if (ResetReason() == REASON_DEEP_SLEEP_AWAKE) {
-    RtcReboot.fast_reboot_count = 0;  // Disable fast reboot and quick power cycle detection
-  } else {
-    RtcReboot.fast_reboot_count++;
-  }
-#endif
+  #ifdef FIRMWARE_MINIMAL
+    RtcReboot.fast_reboot_count = 0;    // Disable fast reboot and quick power cycle detection
+  #else
+    if (ResetReason() == REASON_DEEP_SLEEP_AWAKE) {
+      RtcReboot.fast_reboot_count = 0;  // Disable fast reboot and quick power cycle detection
+    } else {
+      RtcReboot.fast_reboot_count++;
+    }
+  #endif
   RtcRebootSave();
 
   if (RtcSettingsLoad(0)) {
@@ -249,12 +249,12 @@ void setup(void) {
   }
   Serial.begin(TasmotaGlobal.baudrate);
   Serial.println();
-//  Serial.setRxBufferSize(INPUT_BUFFER_SIZE);  // Default is 256 chars
+  //  Serial.setRxBufferSize(INPUT_BUFFER_SIZE);  // Default is 256 chars
   TasmotaGlobal.seriallog_level = LOG_LEVEL_INFO;  // Allow specific serial messages until config loaded
 
-#ifdef USE_UFILESYS
-  UfsInit();  // xdrv_50_filesystem.ino
-#endif
+  #ifdef USE_UFILESYS
+    UfsInit();  // xdrv_50_filesystem.ino
+  #endif
 
   SettingsLoad();
   SettingsDelta();
@@ -278,18 +278,18 @@ void setup(void) {
   TasmotaGlobal.stop_flash_rotate = Settings.flag.stop_flash_rotate;  // SetOption12 - Switch between dynamic or fixed slot flash save location
   TasmotaGlobal.save_data_counter = Settings.save_data;
   TasmotaGlobal.sleep = Settings.sleep;
-#ifndef USE_EMULATION
-  Settings.flag2.emulation = 0;
-#else
-#ifndef USE_EMULATION_WEMO
-  if (EMUL_WEMO == Settings.flag2.emulation) { Settings.flag2.emulation = 0; }
-#endif
-#ifndef USE_EMULATION_HUE
-  if (EMUL_HUE == Settings.flag2.emulation) { Settings.flag2.emulation = 0; }
-#endif
-#endif  // USE_EMULATION
+  #ifndef USE_EMULATION
+    Settings.flag2.emulation = 0;
+  #else
+    #ifndef USE_EMULATION_WEMO
+      if (EMUL_WEMO == Settings.flag2.emulation) { Settings.flag2.emulation = 0; }
+    #endif
+    #ifndef USE_EMULATION_HUE
+      if (EMUL_HUE == Settings.flag2.emulation) { Settings.flag2.emulation = 0; }
+    #endif
+  #endif  // USE_EMULATION
 
-//  AddLogBuffer(LOG_LEVEL_DEBUG, (uint8_t*)&TasmotaGlobal, sizeof(TasmotaGlobal));
+  //  AddLogBuffer(LOG_LEVEL_DEBUG, (uint8_t*)&TasmotaGlobal, sizeof(TasmotaGlobal));
 
   if (Settings.param[P_BOOT_LOOP_OFFSET]) {         // SetOption36
     // Disable functionality as possible cause of fast restart within BOOT_LOOP_TIME seconds (Exception, WDT or restarts)
@@ -313,7 +313,7 @@ void setup(void) {
       }
       if (RtcReboot.fast_reboot_count > Settings.param[P_BOOT_LOOP_OFFSET] +4) {  // Restarted 6 times
         Settings.module = Settings.fallback_module;  // Reset module to fallback module
-//        Settings.last_module = Settings.fallback_module;
+        //        Settings.last_module = Settings.fallback_module;
       }
       AddLog(LOG_LEVEL_INFO, PSTR("FRC: " D_LOG_SOME_SETTINGS_RESET " (%d)"), RtcReboot.fast_reboot_count);
     }
@@ -343,21 +343,21 @@ void setup(void) {
 
   AddLog(LOG_LEVEL_INFO, PSTR(D_PROJECT " %s %s " D_VERSION " %s%s-" ARDUINO_CORE_RELEASE "(%s)"),
     PSTR(PROJECT), SettingsText(SET_DEVICENAME), TasmotaGlobal.version, TasmotaGlobal.image_name, GetBuildDateAndTime().c_str());
-#ifdef FIRMWARE_MINIMAL
-  AddLog(LOG_LEVEL_INFO, PSTR(D_WARNING_MINIMAL_VERSION));
-#endif  // FIRMWARE_MINIMAL
+  #ifdef FIRMWARE_MINIMAL
+    AddLog(LOG_LEVEL_INFO, PSTR(D_WARNING_MINIMAL_VERSION));
+  #endif  // FIRMWARE_MINIMAL
 
   RtcInit();
 
-#ifdef USE_ARDUINO_OTA
-  ArduinoOTAInit();
-#endif  // USE_ARDUINO_OTA
+  #ifdef USE_ARDUINO_OTA
+    ArduinoOTAInit();
+  #endif  // USE_ARDUINO_OTA
 
   XdrvCall(FUNC_INIT);
   XsnsCall(FUNC_INIT);
-#ifdef USE_SCRIPT
-  if (bitRead(Settings.rule_enabled, 0)) Run_Scripter(">BS",3,0);
-#endif
+  #ifdef USE_SCRIPT
+    if (bitRead(Settings.rule_enabled, 0)) Run_Scripter(">BS",3,0);
+  #endif
 
   TasmotaGlobal.rules_flag.system_init = 1;
 }
@@ -370,14 +370,14 @@ void BacklogLoop(void) {
       bool nodelay_detected = false;
       String cmd;
       do {
-#ifdef SUPPORT_IF_STATEMENT
-        cmd = backlog.shift();
-#else
-        cmd = TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer];
-        TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer] = (const char*) nullptr;  // Force deallocation of the String internal memory
-        TasmotaGlobal.backlog_pointer++;
-        if (TasmotaGlobal.backlog_pointer >= MAX_BACKLOG) { TasmotaGlobal.backlog_pointer = 0; }
-#endif
+        #ifdef SUPPORT_IF_STATEMENT
+                cmd = backlog.shift();
+        #else
+                cmd = TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer];
+                TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer] = (const char*) nullptr;  // Force deallocation of the String internal memory
+                TasmotaGlobal.backlog_pointer++;
+                if (TasmotaGlobal.backlog_pointer >= MAX_BACKLOG) { TasmotaGlobal.backlog_pointer = 0; }
+        #endif
         nodelay_detected = !strncasecmp_P(cmd.c_str(), PSTR(D_CMND_NODELAY), strlen(D_CMND_NODELAY));
         if (nodelay_detected) { nodelay = true; }
       } while (!BACKLOG_EMPTY && nodelay_detected);
@@ -407,32 +407,32 @@ void Scheduler(void) {
   XdrvCall(FUNC_LOOP);
   XsnsCall(FUNC_LOOP);
 
-// check LEAmDNS.h
-// MDNS.update() needs to be called in main loop
-#ifdef ESP8266                     // Not needed with esp32 mdns
-#ifdef USE_DISCOVERY
-#ifdef USE_WEBSERVER
-#ifdef WEBSERVER_ADVERTISE
-  MdnsUpdate();
-#endif  // WEBSERVER_ADVERTISE
-#endif  // USE_WEBSERVER
-#endif  // USE_DISCOVERY
-#endif  // ESP8266
+  // check LEAmDNS.h
+  // MDNS.update() needs to be called in main loop
+  #ifdef ESP8266                     // Not needed with esp32 mdns
+  #ifdef USE_DISCOVERY
+  #ifdef USE_WEBSERVER
+  #ifdef WEBSERVER_ADVERTISE
+    MdnsUpdate();
+  #endif  // WEBSERVER_ADVERTISE
+  #endif  // USE_WEBSERVER
+  #endif  // USE_DISCOVERY
+  #endif  // ESP8266
 
   OsWatchLoop();
   ButtonLoop();
   SwitchLoop();
-#ifdef USE_DEVICE_GROUPS
-  DeviceGroupsLoop();
-#endif  // USE_DEVICE_GROUPS
+  #ifdef USE_DEVICE_GROUPS
+    DeviceGroupsLoop();
+  #endif  // USE_DEVICE_GROUPS
   BacklogLoop();
 
   static uint32_t state_50msecond = 0;             // State 50msecond timer
   if (TimeReached(state_50msecond)) {
     SetNextTimeInterval(state_50msecond, 50);
-#ifdef ROTARY_V1
-    RotaryHandler();
-#endif  // ROTARY_V1
+    #ifdef ROTARY_V1
+        RotaryHandler();
+    #endif  // ROTARY_V1
     XdrvCall(FUNC_EVERY_50_MSECOND);
     XsnsCall(FUNC_EVERY_50_MSECOND);
   }
@@ -463,9 +463,9 @@ void Scheduler(void) {
 
   if (!TasmotaGlobal.serial_local) { SerialInput(); }
 
-#ifdef USE_ARDUINO_OTA
-  ArduinoOtaLoop();
-#endif  // USE_ARDUINO_OTA
+  #ifdef USE_ARDUINO_OTA
+    ArduinoOtaLoop();
+  #endif  // USE_ARDUINO_OTA
 }
 
 void loop(void) {

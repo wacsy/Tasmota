@@ -412,9 +412,9 @@ void CmndStatus(void)
 
   if ((0 == payload) || (-99 == payload)) {
     uint32_t maxfn = (TasmotaGlobal.devices_present > MAX_FRIENDLYNAMES) ? MAX_FRIENDLYNAMES : (!TasmotaGlobal.devices_present) ? 1 : TasmotaGlobal.devices_present;
-#ifdef USE_SONOFF_IFAN
-    if (IsModuleIfan()) { maxfn = 1; }
-#endif  // USE_SONOFF_IFAN
+    #ifdef USE_SONOFF_IFAN
+        if (IsModuleIfan()) { maxfn = 1; }
+    #endif  // USE_SONOFF_IFAN
     stemp[0] = '\0';
     for (uint32_t i = 0; i < maxfn; i++) {
       snprintf_P(stemp, sizeof(stemp), PSTR("%s%s\"%s\"" ), stemp, (i > 0 ? "," : ""), EscapeJSONString(SettingsText(SET_FRIENDLYNAME1 +i)).c_str());
@@ -447,16 +447,16 @@ void CmndStatus(void)
     Response_P(PSTR("{\"" D_CMND_STATUS D_STATUS1_PARAMETER "\":{\"" D_JSON_BAUDRATE "\":%d,\"" D_CMND_SERIALCONFIG "\":\"%s\",\"" D_CMND_GROUPTOPIC "\":\"%s\",\"" D_CMND_OTAURL "\":\"%s\",\""
                           D_JSON_RESTARTREASON "\":\"%s\",\"" D_JSON_UPTIME "\":\"%s\",\"" D_JSON_STARTUPUTC "\":\"%s\",\"" D_CMND_SLEEP "\":%d,\""
                           D_JSON_CONFIG_HOLDER "\":%d,\"" D_JSON_BOOTCOUNT "\":%d,\"BCResetTime\":\"%s\",\"" D_JSON_SAVECOUNT "\":%d"
-#ifdef ESP8266
-                          ",\"" D_JSON_SAVEADDRESS "\":\"%X\""
-#endif
+                          #ifdef ESP8266
+                            ",\"" D_JSON_SAVEADDRESS "\":\"%X\""
+                          #endif
                           "}}"),
                           TasmotaGlobal.baudrate, GetSerialConfig().c_str(), SettingsText(SET_MQTT_GRP_TOPIC), SettingsText(SET_OTAURL),
                           GetResetReason().c_str(), GetUptime().c_str(), GetDateAndTime(DT_RESTART).c_str(), Settings.sleep,
                           Settings.cfg_holder, Settings.bootcount, GetDateAndTime(DT_BOOTCOUNT).c_str(), Settings.save_flag
-#ifdef ESP8266
-                          , GetSettingsAddress()
-#endif
+                          #ifdef ESP8266
+                            , GetSettingsAddress()
+                          #endif
                           );
     MqttPublishPrefixTopic_P(STAT, PSTR(D_CMND_STATUS "1"));
   }
