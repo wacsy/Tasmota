@@ -20,7 +20,7 @@
 #define XDRV_02                    2
 
 #ifndef MQTT_WIFI_CLIENT_TIMEOUT
-#define MQTT_WIFI_CLIENT_TIMEOUT   200    // Wifi TCP connection timeout (default is 5000 mSec)
+  #define MQTT_WIFI_CLIENT_TIMEOUT   200    // Wifi TCP connection timeout (default is 5000 mSec)
 #endif
 
 #define USE_MQTT_NEW_PUBSUBCLIENT
@@ -36,18 +36,18 @@ WiFiClient EspClient;                     // Wifi Client - non-TLS
 const char kMqttCommands[] PROGMEM = "|"  // No prefix
   // SetOption synonyms
   D_SO_MQTTJSONONLY "|"
-#ifdef USE_MQTT_TLS
-  D_SO_MQTTTLS "|"
-#endif
+  #ifdef USE_MQTT_TLS
+    D_SO_MQTTTLS "|"
+  #endif
   D_SO_MQTTNORETAIN "|" D_SO_MQTTDETACHRELAY "|"
   // regular commands
-#if defined(USE_MQTT_TLS) && !defined(USE_MQTT_TLS_CA_CERT)
-  D_CMND_MQTTFINGERPRINT "|"
-#endif
+  #if defined(USE_MQTT_TLS) && !defined(USE_MQTT_TLS_CA_CERT)
+    D_CMND_MQTTFINGERPRINT "|"
+  #endif
   D_CMND_MQTTUSER "|" D_CMND_MQTTPASSWORD "|" D_CMND_MQTTKEEPALIVE "|" D_CMND_MQTTTIMEOUT "|"
-#if defined(USE_MQTT_TLS) && defined(USE_MQTT_AWS_IOT)
-  D_CMND_TLSKEY "|"
-#endif
+  #if defined(USE_MQTT_TLS) && defined(USE_MQTT_AWS_IOT)
+    D_CMND_TLSKEY "|"
+  #endif
   D_CMND_MQTTHOST "|" D_CMND_MQTTPORT "|" D_CMND_MQTTRETRY "|" D_CMND_STATETEXT "|" D_CMND_MQTTCLIENT "|"
   D_CMND_FULLTOPIC "|" D_CMND_PREFIX "|" D_CMND_GROUPTOPIC "|" D_CMND_TOPIC "|" D_CMND_PUBLISH "|" D_CMND_MQTTLOG "|"
   D_CMND_BUTTONTOPIC "|" D_CMND_SWITCHTOPIC "|" D_CMND_BUTTONRETAIN "|" D_CMND_SWITCHRETAIN "|" D_CMND_POWERRETAIN "|"
@@ -55,9 +55,9 @@ const char kMqttCommands[] PROGMEM = "|"  // No prefix
 
 SO_SYNONYMS(kMqttSynonyms,
   90,
-#ifdef USE_MQTT_TLS
-  103,
-#endif
+  #ifdef USE_MQTT_TLS
+    103,
+  #endif
   104, 114
 );
 
@@ -67,13 +67,13 @@ SO_SYNONYMS(kMqttSynonyms,
 // };
 
 void (* const MqttCommand[])(void) PROGMEM = {
-#if defined(USE_MQTT_TLS) && !defined(USE_MQTT_TLS_CA_CERT)
-  &CmndMqttFingerprint,
-#endif
-  &CmndMqttUser, &CmndMqttPassword, &CmndMqttKeepAlive, &CmndMqttTimeout,
-#if defined(USE_MQTT_TLS) && defined(USE_MQTT_AWS_IOT)
-  &CmndTlsKey,
-#endif
+  #if defined(USE_MQTT_TLS) && !defined(USE_MQTT_TLS_CA_CERT)
+    &CmndMqttFingerprint,
+  #endif
+    &CmndMqttUser, &CmndMqttPassword, &CmndMqttKeepAlive, &CmndMqttTimeout,
+  #if defined(USE_MQTT_TLS) && defined(USE_MQTT_AWS_IOT)
+    &CmndTlsKey,
+  #endif
   &CmndMqttHost, &CmndMqttPort, &CmndMqttRetry, &CmndStateText, &CmndMqttClient,
   &CmndFullTopic, &CmndPrefix, &CmndGroupTopic, &CmndTopic, &CmndPublish, &CmndMqttlog,
   &CmndButtonTopic, &CmndSwitchTopic, &CmndButtonRetain, &CmndSwitchRetain, &CmndPowerRetain, &CmndSensorRetain,
