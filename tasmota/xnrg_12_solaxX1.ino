@@ -100,7 +100,6 @@ struct SOLAXX1 {
   float dc2_voltage = 0;
   float dc1_current = 0;
   float dc2_current = 0;
-  uint32_t energy_total = 0;
   uint32_t runtime_total = 0;
   float dc1_power = 0;
   float dc2_power = 0;
@@ -272,7 +271,7 @@ void solaxX1250MSecond(void) // Every 250 milliseconds
         Energy.frequency[0] =    (float)((value[25] << 8) | value[26]) * 0.01f; // AC Frequency
         Energy.active_power[0] = (float)((value[27] << 8) | value[28]); // AC Power
         //temporal = (float)((value[29] << 8) | value[30]) * 0.1f; // Not Used
-        solaxX1.energy_total =   ((value[31] << 24) | (value[32] << 16) | (value[33] << 8) | value[34]); // Energy Total
+        Energy.import_active[0] = (float)((value[31] << 24) | (value[32] << 16) | (value[33] << 8) | value[34]) * 0.1f; // Energy Total
         solaxX1.runtime_total =  ((value[35] << 24) | (value[36] << 16) | (value[37] << 8) | value[38]); // Work Time Total
         solaxX1.status =         (uint8_t)((value[39] << 8) | value[40]); // Work mode
         //temporal = (float)((value[41] << 8) | value[42]); // Grid voltage fault value 0.1V
@@ -287,7 +286,7 @@ void solaxX1250MSecond(void) // Every 250 milliseconds
         solaxX1.dc1_power = solaxX1.dc1_voltage * solaxX1.dc1_current;
         solaxX1.dc2_power = solaxX1.dc2_voltage * solaxX1.dc2_current;
 
-        EnergyUpdateTotal((float)solaxX1.energy_total * 0.1f, true);  // 484.708 kWh
+        EnergyUpdateTotal();  // 484.708 kWh
       }
     } else { // end hasAddress
       // check address confirmation from inverter
@@ -365,7 +364,7 @@ void solaxX1250MSecond(void) // Every 250 milliseconds
 
       solaxX1.temperature = solaxX1.dc1_voltage = solaxX1.dc2_voltage = solaxX1.dc1_current = solaxX1.dc2_current = solaxX1.dc1_power = 0;
       solaxX1.dc2_power = solaxX1.status = Energy.current[0] = Energy.voltage[0] = Energy.frequency[0] = Energy.active_power[0] = 0;
-      //solaxX1.energy_today = solaxX1.energy_total = solaxX1.runtime_total = 0;
+      //solaxX1.energy_today = solaxX1.runtime_total = 0;
     } else {
       if (protocolStatus.queryOfflineSend) {
         protocolStatus.status = 0b00001000; // queryOffline
@@ -420,20 +419,20 @@ const char HTTP_SNS_solaxX1_DATA3[] PROGMEM =
 void solaxX1Show(bool json)
 {
   char solar_power[33];
-  dtostrfd(solaxX1.dc1_power + solaxX1.dc2_power, Settings.flag2.wattage_resolution, solar_power);
+  dtostrfd(solaxX1.dc1_power + solaxX1.dc2_power, Settings->flag2.wattage_resolution, solar_power);
   char pv1_voltage[33];
-  dtostrfd(solaxX1.dc1_voltage, Settings.flag2.voltage_resolution, pv1_voltage);
+  dtostrfd(solaxX1.dc1_voltage, Settings->flag2.voltage_resolution, pv1_voltage);
   char pv1_current[33];
-  dtostrfd(solaxX1.dc1_current, Settings.flag2.current_resolution, pv1_current);
+  dtostrfd(solaxX1.dc1_current, Settings->flag2.current_resolution, pv1_current);
   char pv1_power[33];
-  dtostrfd(solaxX1.dc1_power, Settings.flag2.wattage_resolution, pv1_power);
+  dtostrfd(solaxX1.dc1_power, Settings->flag2.wattage_resolution, pv1_power);
 #ifdef SOLAXX1_PV2
   char pv2_voltage[33];
-  dtostrfd(solaxX1.dc2_voltage, Settings.flag2.voltage_resolution, pv2_voltage);
+  dtostrfd(solaxX1.dc2_voltage, Settings->flag2.voltage_resolution, pv2_voltage);
   char pv2_current[33];
-  dtostrfd(solaxX1.dc2_current, Settings.flag2.current_resolution, pv2_current);
+  dtostrfd(solaxX1.dc2_current, Settings->flag2.current_resolution, pv2_current);
   char pv2_power[33];
-  dtostrfd(solaxX1.dc2_power, Settings.flag2.wattage_resolution, pv2_power);
+  dtostrfd(solaxX1.dc2_power, Settings->flag2.wattage_resolution, pv2_power);
 #endif
   char runtime[33];
   dtostrfd(solaxX1.runtime_total, 0, runtime);
@@ -449,7 +448,7 @@ void solaxX1Show(bool json)
                                 pv2_voltage, pv2_current, pv2_power);
 #endif
     ResponseAppend_P(PSTR(",\"" D_JSON_TEMPERATURE "\":%*_f,\"" D_JSON_RUNTIME "\":%s,\"" D_JSON_STATUS "\":\"%s\",\"" D_JSON_ERROR "\":%d"),
-                                Settings.flag2.temperature_resolution, &solaxX1.temperature, runtime, status, solaxX1.errorCode);
+                                Settings->flag2.temperature_resolution, &solaxX1.temperature, runtime, status, solaxX1.errorCode);
 
 #ifdef USE_DOMOTICZ
     // Avoid bad temperature report at beginning of the day (spikes of 1200 celsius degrees)

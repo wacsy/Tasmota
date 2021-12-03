@@ -29,7 +29,7 @@
 
 // can be user defined in my_user_config.h
 #ifndef SDM120_SPEED
-  #define SDM120_SPEED      2400    // default SDM120 Modbus address
+  #define SDM120_SPEED      2400    // default SDM120 Modbus baud rate
 #endif
 // can be user defined in my_user_config.h
 #ifndef SDM120_ADDR
@@ -161,7 +161,8 @@ void SDM120Every250ms(void)
             Sdm120.start_address_count = sdm120_table;  // No extended registers available
           }
         }
-        EnergyUpdateTotal(Sdm120.total_active, true);  // 484.708 kWh
+        Energy.import_active[0] = Sdm120.total_active;  // 484.708 kWh
+        EnergyUpdateTotal();  // 484.708 kWh
       }
     }
   } // end data ready
@@ -214,11 +215,11 @@ void Sdm220Show(bool json)
   if (isnan(Sdm120.import_active)) { return; }
 
   char import_active_chr[FLOATSZ];
-  dtostrfd(Sdm120.import_active, Settings.flag2.energy_resolution, import_active_chr);
+  dtostrfd(Sdm120.import_active, Settings->flag2.energy_resolution, import_active_chr);
   char import_reactive_chr[FLOATSZ];
-  dtostrfd(Sdm120.import_reactive, Settings.flag2.energy_resolution, import_reactive_chr);
+  dtostrfd(Sdm120.import_reactive, Settings->flag2.energy_resolution, import_reactive_chr);
   char export_reactive_chr[FLOATSZ];
-  dtostrfd(Sdm120.export_reactive, Settings.flag2.energy_resolution, export_reactive_chr);
+  dtostrfd(Sdm120.export_reactive, Settings->flag2.energy_resolution, export_reactive_chr);
   char phase_angle_chr[FLOATSZ];
   dtostrfd(Sdm120.phase_angle, 2, phase_angle_chr);
 

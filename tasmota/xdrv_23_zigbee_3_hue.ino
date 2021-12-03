@@ -152,21 +152,22 @@ void ZigbeeHueGroups(String * lights) {
 }
 
 void ZigbeeSendHue(uint16_t shortaddr, uint16_t cluster, uint8_t cmd, const SBuffer & s) {
-  ZCLMessage zcl(&s ? s.len() : 0);
+  ZCLMessage zcl(s.len());
   zcl.shortaddr = shortaddr;
   zcl.cluster = cluster;
   zcl.cmd = cmd;
   zcl.clusterSpecific = true;
   zcl.needResponse = true;
   zcl.direct = false;   // discover route
-  if (&s) { zcl.buf.replace(s); }
+  zcl.buf.replace(s);
   zigbeeZCLSendCmd(zcl);
 }
 
 // Send commands
 // Power On/Off
 void ZigbeeHuePower(uint16_t shortaddr, bool power) {
-  ZigbeeSendHue(shortaddr, 0x0006, power ? 1 : 0, *(SBuffer*)nullptr);
+  SBuffer s(0);
+  ZigbeeSendHue(shortaddr, 0x0006, power ? 1 : 0, s);
   zigbee_devices.getShortAddr(shortaddr).setPower(power, 0);
 }
 
@@ -212,7 +213,7 @@ void ZigbeeHueHS(uint16_t shortaddr, uint16_t hue, uint8_t sat) {
   uint8_t hue8 = changeUIntScale(hue, 0, 360, 0, 254);
   if (sat > 0xFE) { sat = 0xFE; }
   SBuffer s(4);
-  s.add8(hue);
+  s.add8(hue8);
   s.add8(sat);
   s.add16(0);
   ZigbeeSendHue(shortaddr, 0x0300, 0x06, s);
@@ -239,7 +240,12 @@ void ZigbeeHandleHue(uint16_t shortaddr, uint32_t device_id, String &response) {
   if (Webserver->args()) {
     response = "[";
 
+#ifdef ESP82666   // ESP8266 memory is limited, avoid copying and modify in place
     JsonParser parser((char*) Webserver->arg((Webserver->args())-1).c_str());
+#else             // does not work on ESP32, we need to get a fresh copy of the string
+    String request_arg = Webserver->arg((Webserver->args())-1);
+    JsonParser parser((char*) request_arg.c_str());
+#endif
     JsonParserObject root = parser.getRootObject();
 
     JsonParserToken hue_on = root[PSTR("on")];
@@ -362,7 +368,7 @@ void ZigbeeHandleHue(uint16_t shortaddr, uint32_t device_id, String &response) {
   else {
     response = msg[HUE_ERROR_JSON];
   }
-  AddLog_P(LOG_LEVEL_DEBUG_MORE, PSTR(D_LOG_HTTP D_HUE " Result (%s)"), response.c_str());
+  AddLog(LOG_LEVEL_DEBUG_MORE, PSTR(D_LOG_HTTP D_HUE " Result (%s)"), response.c_str());
   WSSend(code, CT_APP_JSON, response);
 
   free(buf);

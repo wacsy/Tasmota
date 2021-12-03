@@ -67,15 +67,16 @@
 //********************************************************************************************
 
 #ifndef ETH_ADDRESS
-#define ETH_ADDRESS       0                      // esp_eth.h eth_phy_base_t:   0 = PHY0 .. 31 = PHY31
+#define ETH_ADDRESS       0                      // ETH.h uint8_t:          0 = PHY0 .. 31 = PHY31
 #endif
 
 #ifndef ETH_TYPE
-#define ETH_TYPE          ETH_PHY_LAN8720        // ETH.h eth_phy_type_t:       0 = ETH_PHY_LAN8720, 1 = ETH_PHY_TLK110, 2 = ETH_PHY_IP101
+#define ETH_TYPE          ETH_PHY_LAN8720        // ETH.h eth_phy_type_t:   0 = ETH_PHY_LAN8720, 1 = ETH_PHY_TLK110/ETH_PHY_IP101, 2 = ETH_PHY_RTL8201, 3 = ETH_PHY_DP83848, 4 = ETH_PHY_DM9051, 5 = ETH_PHY_KSZ8081
+
 #endif
 
 #ifndef ETH_CLKMODE
-#define ETH_CLKMODE       ETH_CLOCK_GPIO0_IN     // esp_eth.h eth_clock_mode_t: 0 = ETH_CLOCK_GPIO0_IN, 1 = ETH_CLOCK_GPIO0_OUT, 2 = ETH_CLOCK_GPIO16_OUT, 3 = ETH_CLOCK_GPIO17_OUT
+#define ETH_CLKMODE       ETH_CLOCK_GPIO0_IN     // ETH.h eth_clock_mode_t: 0 = ETH_CLOCK_GPIO0_IN, 1 = ETH_CLOCK_GPIO0_OUT, 2 = ETH_CLOCK_GPIO16_OUT, 3 = ETH_CLOCK_GPIO17_OUT
 #endif
 */
 
@@ -85,27 +86,28 @@ char eth_hostname[sizeof(TasmotaGlobal.hostname)];
 
 void EthernetEvent(WiFiEvent_t event) {
   switch (event) {
-    case SYSTEM_EVENT_ETH_START:
+    case ARDUINO_EVENT_ETH_START:
       AddLog(LOG_LEVEL_DEBUG, PSTR("ETH: " D_ATTEMPTING_CONNECTION));
       ETH.setHostname(eth_hostname);
       break;
-    case SYSTEM_EVENT_ETH_CONNECTED:
+    case ARDUINO_EVENT_ETH_CONNECTED:
       AddLog(LOG_LEVEL_INFO, PSTR("ETH: " D_CONNECTED " at %dMbps%s"),
         ETH.linkSpeed(), (ETH.fullDuplex()) ? " Full Duplex" : "");
       break;
-    case SYSTEM_EVENT_ETH_GOT_IP:
+    case ARDUINO_EVENT_ETH_GOT_IP:
       AddLog(LOG_LEVEL_DEBUG, PSTR("ETH: Mac %s, IPAddress %_I, Hostname %s"),
         ETH.macAddress().c_str(), (uint32_t)ETH.localIP(), eth_hostname);
-      Settings.ipv4_address[1] = (uint32_t)ETH.gatewayIP();
-      Settings.ipv4_address[2] = (uint32_t)ETH.subnetMask();
-      Settings.ipv4_address[3] = (uint32_t)ETH.dnsIP();
+      Settings->ipv4_address[1] = (uint32_t)ETH.gatewayIP();
+      Settings->ipv4_address[2] = (uint32_t)ETH.subnetMask();
+      Settings->ipv4_address[3] = (uint32_t)ETH.dnsIP();
+      Settings->ipv4_address[4] = (uint32_t)ETH.dnsIP(1);
       TasmotaGlobal.global_state.eth_down = 0;
       break;
-    case SYSTEM_EVENT_ETH_DISCONNECTED:
+    case ARDUINO_EVENT_ETH_DISCONNECTED:
       AddLog(LOG_LEVEL_INFO, PSTR("ETH: Disconnected"));
       TasmotaGlobal.global_state.eth_down = 1;
       break;
-    case SYSTEM_EVENT_ETH_STOP:
+    case ARDUINO_EVENT_ETH_STOP:
       AddLog(LOG_LEVEL_DEBUG, PSTR("ETH: Stopped"));
       TasmotaGlobal.global_state.eth_down = 1;
       break;
@@ -115,28 +117,28 @@ void EthernetEvent(WiFiEvent_t event) {
 }
 
 void EthernetInit(void) {
-  if (!Settings.flag4.network_ethernet) { return; }
+  if (!Settings->flag4.network_ethernet) { return; }
   if (!PinUsed(GPIO_ETH_PHY_MDC) && !PinUsed(GPIO_ETH_PHY_MDIO)) {
     AddLog(LOG_LEVEL_DEBUG, PSTR("ETH: No ETH MDC and/or ETH MDIO GPIO defined"));
     return;
   }
 
   if (WT32_ETH01 == TasmotaGlobal.module_type) {
-    Settings.eth_address = 1;                    // EthAddress
-    Settings.eth_type = ETH_PHY_LAN8720;         // EthType
-    Settings.eth_clk_mode = ETH_CLOCK_GPIO0_IN;  // EthClockMode
+    Settings->eth_address = 1;                    // EthAddress
+    Settings->eth_type = ETH_PHY_LAN8720;         // EthType
+    Settings->eth_clk_mode = ETH_CLOCK_GPIO0_IN;  // EthClockMode
   }
 
-//  snprintf_P(Eth.hostname, sizeof(Eth.hostname), PSTR("%s_eth"), TasmotaGlobal.hostname);
-  strlcpy(eth_hostname, TasmotaGlobal.hostname, sizeof(eth_hostname) -5);  // Make sure there is room for "_eth"
-  strcat(eth_hostname, "_eth");
+//  snprintf_P(Eth.hostname, sizeof(Eth.hostname), PSTR("%s-eth"), TasmotaGlobal.hostname);
+  strlcpy(eth_hostname, TasmotaGlobal.hostname, sizeof(eth_hostname) -5);  // Make sure there is room for "-eth"
+  strcat(eth_hostname, "-eth");
 
   WiFi.onEvent(EthernetEvent);
 
   int eth_power = Pin(GPIO_ETH_PHY_POWER);
   int eth_mdc = Pin(GPIO_ETH_PHY_MDC);
   int eth_mdio = Pin(GPIO_ETH_PHY_MDIO);
-  if (!ETH.begin(Settings.eth_address, eth_power, eth_mdc, eth_mdio, (eth_phy_type_t)Settings.eth_type, (eth_clock_mode_t)Settings.eth_clk_mode)) {
+  if (!ETH.begin(Settings->eth_address, eth_power, eth_mdc, eth_mdio, (eth_phy_type_t)Settings->eth_type, (eth_clock_mode_t)Settings->eth_clk_mode)) {
     AddLog(LOG_LEVEL_DEBUG, PSTR("ETH: Bad PHY type or init error"));
   };
 }
@@ -170,37 +172,37 @@ void (* const EthernetCommand[])(void) PROGMEM = {
 void CmndEthernet(void)
 {
   if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 1)) {
-    Settings.flag4.network_ethernet = XdrvMailbox.payload;
+    Settings->flag4.network_ethernet = XdrvMailbox.payload;
     TasmotaGlobal.restart_flag = 2;
   }
-  ResponseCmndStateText(Settings.flag4.network_ethernet);
+  ResponseCmndStateText(Settings->flag4.network_ethernet);
 }
 
 void CmndEthAddress(void)
 {
   if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 31)) {
-    Settings.eth_address = XdrvMailbox.payload;
+    Settings->eth_address = XdrvMailbox.payload;
     TasmotaGlobal.restart_flag = 2;
   }
-  ResponseCmndNumber(Settings.eth_address);
+  ResponseCmndNumber(Settings->eth_address);
 }
 
 void CmndEthType(void)
 {
   if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 2)) {
-    Settings.eth_type = XdrvMailbox.payload;
+    Settings->eth_type = XdrvMailbox.payload;
     TasmotaGlobal.restart_flag = 2;
   }
-  ResponseCmndNumber(Settings.eth_type);
+  ResponseCmndNumber(Settings->eth_type);
 }
 
 void CmndEthClockMode(void)
 {
   if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 3)) {
-    Settings.eth_clk_mode = XdrvMailbox.payload;
+    Settings->eth_clk_mode = XdrvMailbox.payload;
     TasmotaGlobal.restart_flag = 2;
   }
-  ResponseCmndNumber(Settings.eth_clk_mode);
+  ResponseCmndNumber(Settings->eth_clk_mode);
 }
 
 /*********************************************************************************************\

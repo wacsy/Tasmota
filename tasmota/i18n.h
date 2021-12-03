@@ -27,6 +27,7 @@
 \*********************************************************************************************/
 
 #define D_JSON_ABORTED "Aborted"
+#define D_JSON_ACK "Ack"
 #define D_JSON_ACTIVE "Active"
 #define D_JSON_ADDRESS "Address"
 #define D_JSON_AIRQUALITY "AirQuality"
@@ -49,6 +50,7 @@
 #define D_JSON_CONFIDENCE "Confidence"
 #define D_JSON_CONFIG_HOLDER "CfgHolder"
 #define D_JSON_CONNECT_FAILED "Connect failed"
+#define D_JSON_CONNECTION_LOST "Connection lost"
 #define D_JSON_COREVERSION "Core"
 #define D_JSON_COUNT "Count"
 #define D_JSON_COUNTER "Counter"
@@ -93,6 +95,8 @@
 #define D_JSON_HEAPSIZE "Heap"
 #define D_JSON_HIGH "High"
 #define D_JSON_HOST_NOT_FOUND "Host not found"
+#define D_JSON_FILE_NOT_FOUND "File not found"
+#define D_JSON_OTHER_HTTP_ERROR "Other http error"
 #define D_JSON_HSBCOLOR "HSBColor"
 #define D_JSON_HUMIDITY "Humidity"
 #define D_JSON_I2CSCAN_DEVICES_FOUND_AT "Device(s) found at"
@@ -104,6 +108,7 @@
 #define D_JSON_IMPORT_POWER "ImportPower"
 #define D_JSON_IMPORT_REACTIVE "ImportReactive"
 #define D_JSON_INFRARED "Infrared"
+#define D_JSON_INVALID_FILE_TYPE "Invalid filetype or buffer"
 #define D_JSON_UNKNOWN "Unknown"
 #define D_JSON_LIGHT "Light"
 #define D_JSON_LINK_COUNT "LinkCount"
@@ -111,6 +116,7 @@
 #define D_JSON_LOW "Low"
 #define D_JSON_MAC "Mac"
 #define D_JSON_MASK "Mask"
+#define D_JSON_MD5_MISMATCH "MD5 mismatch"
 #define D_JSON_MEMORY_ERROR "Memory error"
 #define D_JSON_MINIMAL "minimal"
 #define D_JSON_MODEL "Model"
@@ -197,6 +203,7 @@
 #define D_JSON_VOLUME "Volume"
 #define D_JSON_WEIGHT "Weight"
 #define D_JSON_WIFI "Wifi"
+#define D_JSON_WIFI_MODE "Mode"
 #define D_JSON_WRONG "Wrong"
 #define D_JSON_WRONG_PARAMETERS "Wrong parameters"
 #define D_JSON_YESTERDAY "Yesterday"
@@ -253,6 +260,7 @@
 #define D_CMND_PULSETIME "PulseTime"
 #define D_CMND_BLINKTIME "BlinkTime"
 #define D_CMND_BLINKCOUNT "BlinkCount"
+#define D_CMND_SETSENSOR "SetSensor"
 #define D_CMND_SENSOR "Sensor"
 #define D_CMND_DRIVER "Driver"
 #define D_CMND_SAVEDATA "SaveData"
@@ -306,6 +314,7 @@
   #define D_WCFG_7_WIFIMANAGER_RESET_ONLY "ManagerRst"
 #define D_CMND_DEVICENAME "DeviceName"
 #define D_CMND_FRIENDLYNAME "FriendlyName"
+#define D_CMND_FN "FN"
 #define D_CMND_SWITCHMODE "SwitchMode"
 #define D_CMND_INTERLOCK "Interlock"
 #define D_CMND_TELEPERIOD "TelePeriod"
@@ -334,6 +343,7 @@
 #define D_CMND_DEVGROUP_SHARE "DevGroupShare"
 #define D_CMND_DEVGROUPSTATUS "DevGroupStatus"
 #define D_CMND_DEVGROUP_TIE "DevGroupTie"
+#define D_CMND_SERIALBUFFER "SerialBuffer"
 #define D_CMND_SERIALSEND "SerialSend"
 #define D_CMND_SERIALDELIMITER "SerialDelimiter"
 #define D_CMND_BAUDRATE "Baudrate"
@@ -343,10 +353,13 @@
   #define D_JSON_GPIO "GPIO"
   #define D_JSON_FLAG "FLAG"
   #define D_JSON_BASE "BASE"
+  #define D_JSON_CMND "CMND"
 #define D_CMND_TEMPOFFSET "TempOffset"
 #define D_CMND_HUMOFFSET "HumOffset"
 #define D_CMND_GLOBAL_TEMP "GlobalTemp"
 #define D_CMND_GLOBAL_HUM "GlobalHum"
+
+#define D_SO_WIFINOSLEEP "WifiNoSleep"
 
 #ifdef ESP32
 #define D_CMND_TOUCH_CAL "TouchCal"
@@ -358,6 +371,7 @@
 // Commands xdrv_02_mqtt.ino
 #define D_SO_MQTTJSONONLY "MqttJSONOnly"
 #define D_SO_MQTTTLS "MqttTLS"
+#define D_SO_MQTTTLS_FINGERPRINT "MqttTLSFingerprint"
 #define D_SO_MQTTNORETAIN "MqttNoRetain"
 #define D_SO_MQTTDETACHRELAY "MqttDetachRelay"
 #define D_CMND_MQTTLOG "MqttLog"
@@ -371,6 +385,7 @@
 #define D_CMND_MQTTPASSWORD "MqttPassword"
 #define D_CMND_MQTTKEEPALIVE "MqttKeepAlive"
 #define D_CMND_MQTTTIMEOUT "MqttTimeout"
+#define D_CMND_MQTTWIFITIMEOUT "MqttWifiTimeout"
 #define D_CMND_TLSKEY "TLSKey"
 #define D_CMND_FULLTOPIC "FullTopic"
 #define D_CMND_PREFIX "Prefix"
@@ -388,6 +403,8 @@
 #define D_CMND_INFORETAIN "InfoRetain"
 #define D_CMND_STATERETAIN "StateRetain"
 #define D_CMND_PUBLISH "Publish"
+#define D_CMND_FILEUPLOAD "FileUpload"
+#define D_CMND_FILEDOWNLOAD "FileDownload"
 
 // Commands xdrv_01_webserver.ino
 #define D_CMND_WEBSERVER "Webserver"
@@ -399,9 +416,11 @@
 #define D_CMND_WEBLOG "WebLog"
 #define D_CMND_WEBREFRESH "WebRefresh"
 #define D_CMND_WEBSEND "WebSend"
+#define D_CMND_WEBQUERY "WebQuery"
 #define D_CMND_WEBCOLOR "WebColor"
 #define D_CMND_WEBBUTTON "WebButton"
 #define D_CMND_WEBSENSOR "WebSensor"
+#define D_CMND_WEBGETCONFIG "WebGetConfig"
 #define D_CMND_EMULATION "Emulation"
 #define D_CMND_SENDMAIL "Sendmail"
 #define D_CMND_CORS "CORS"
@@ -414,11 +433,16 @@
 #define D_CMND_VOLTAGEHIGH "VoltageHigh"
 #define D_CMND_CURRENTLOW "CurrentLow"
 #define D_CMND_CURRENTHIGH "CurrentHigh"
-#define D_CMND_ENERGYRESET "EnergyReset"
+#define D_CMND_ENERGYTODAY "EnergyToday"
+#define D_CMND_ENERGYYESTERDAY "EnergyYesterday"
+#define D_CMND_ENERGYTOTAL "EnergyTotal"
+#define D_CMND_ENERGYUSAGE "EnergyUsage"
+#define D_CMND_ENERGYEXPORT "EnergyExport"
 #define D_CMND_POWERSET "PowerSet"
 #define D_CMND_VOLTAGESET "VoltageSet"
 #define D_CMND_CURRENTSET "CurrentSet"
 #define D_CMND_FREQUENCYSET "FrequencySet"
+#define D_CMND_ENERGYCONFIG "EnergyConfig"
 #define D_CMND_MAXPOWER "MaxPower"
 #define D_CMND_MAXPOWERHOLD "MaxPowerHold"
 #define D_CMND_MAXPOWERWINDOW "MaxPowerWindow"
@@ -454,6 +478,7 @@
 #define D_CMND_FADE "Fade"
 #define D_CMND_PALETTE "Palette"
 #define D_CMND_PIXELS "Pixels"
+#define D_CMND_STEPPIXELS "StepPixels"
 #define D_CMND_RGBWWTABLE "RGBWWTable"
 #define D_CMND_ROTATION "Rotation"
 #define D_CMND_SCHEME "Scheme"
@@ -669,6 +694,9 @@
 #define D_CMND_SHUTTER_INVERTWEBBUTTONS "InvertWebButtons"
 #define D_CMND_SHUTTER_PWMRANGE "PWMRange"
 #define D_CMND_SHUTTER_UNITTEST "UnitTest"
+#define D_CMND_SHUTTER_TILTCONFIG "TiltConfig"
+#define D_CMND_SHUTTER_SETTILT "Tilt"
+#define D_CMND_SHUTTER_TILTINCDEC "TiltChange"
 
 // Commands xdrv_32_hotplug.ino
 #define D_CMND_HOTPLUG "HotPlug"
@@ -686,7 +714,6 @@
 // Commands xdrv_52_berry.ino - Berry scripting language
 #define D_PRFX_BR "Br"
 #define D_CMND_BR_RUN ""
-#define D_CMND_BR_RESET "Reset"
 #define D_BR_NOT_STARTED  "Berry not started"
 
 // Commands xsns_02_analog.ino
@@ -733,6 +760,7 @@
 #define D_LOG_ZIGBEE "ZIG: "       // Zigbee
 #define D_LOG_TCP "TCP: "          // TCP bridge
 #define D_LOG_BERRY "BRY: "        // Berry scripting language
+#define D_LOG_LVGL "LVG: "         // LVGL graphics engine
 
 /********************************************************************************************/
 
@@ -811,9 +839,9 @@ const float kSpeedConversionFactor[] = {1,            // none
 // xdrv_02_webserver.ino
 #ifdef USE_WEBSERVER
 // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
-const char HTTP_SNS_F_TEMP[]        PROGMEM = "{s}%s "  D_TEMPERATURE         "{m}%*_f " D_UNIT_DEGREE            "%c{e}";
-//const char HTTP_SNS_TEMP[]          PROGMEM = "{s}%s "  D_TEMPERATURE         "{m}%s " D_UNIT_DEGREE            "%c{e}";
-
+const char HTTP_SNS_F_TEMP[]        PROGMEM = "{s}%s "  D_TEMPERATURE         "{m}%*_f " D_UNIT_DEGREE          "%c{e}";
+const char HTTP_SNS_F_VOLTAGE[]     PROGMEM = "{s}%s "  D_VOLTAGE             "{m}%*_f " D_UNIT_VOLT              "{e}";
+const char HTTP_SNS_F_CURRENT_MA[]  PROGMEM = "{s}%s "  D_CURRENT             "{m}%*_f " D_UNIT_MILLIAMPERE       "{e}";
 const char HTTP_SNS_HUM[]           PROGMEM = "{s}%s "  D_HUMIDITY            "{m}%s " D_UNIT_PERCENT             "{e}";
 const char HTTP_SNS_DEW[]           PROGMEM = "{s}%s "  D_DEWPOINT            "{m}%s " D_UNIT_DEGREE            "%c{e}";
 const char HTTP_SNS_PRESSURE[]      PROGMEM = "{s}%s "  D_PRESSURE            "{m}%s "                          "%s{e}";
@@ -825,9 +853,11 @@ const char HTTP_SNS_CO2EAVG[]       PROGMEM = "{s}%s "  D_ECO2                "{
 const char HTTP_SNS_GALLONS[]       PROGMEM = "{s}%s "  D_TOTAL_USAGE         "{m}%s " D_UNIT_GALLONS             "{e}";
 const char HTTP_SNS_GPM[]           PROGMEM = "{s}%s "  D_FLOW_RATE           "{m}%s " D_UNIT_GALLONS_PER_MIN     "{e}";
 const char HTTP_SNS_MOISTURE[]      PROGMEM = "{s}%s "  D_MOISTURE            "{m}%d " D_UNIT_PERCENT             "{e}";
+const char HTTP_SNS_RANGE_CHR[]     PROGMEM = "{s}%s "  D_RANGE               "{m}%s"                             "{e}";
 const char HTTP_SNS_RANGE[]         PROGMEM = "{s}%s "  D_RANGE               "{m}%d"                             "{e}";
 const char HTTP_SNS_DISTANCE[]      PROGMEM = "{s}%s "  D_DISTANCE            "{m}%d " D_UNIT_MILLIMETER          "{e}";
 const char HTTP_SNS_DISTANCE_CM[]   PROGMEM = "{s}%s "  D_DISTANCE            "{m}%s " D_UNIT_CENTIMETER          "{e}";
+const char HTTP_SNS_HALL_EFFECT[]   PROGMEM = "{s}%s "  D_HALL_EFFECT         "{m}%d"                             "{e}";
 const char HTTP_SNS_VOLTAGE[]       PROGMEM = "{s}"     D_VOLTAGE             "{m}%s " D_UNIT_VOLT                "{e}";
 const char HTTP_SNS_CURRENT[]       PROGMEM = "{s}"     D_CURRENT             "{m}%s " D_UNIT_AMPERE              "{e}";
 const char HTTP_SNS_POWER[]         PROGMEM = "{s}"     D_POWERUSAGE          "{m}%s " D_UNIT_WATT                "{e}";
@@ -843,6 +873,9 @@ const char HTTP_SNS_COLOR_RED[]     PROGMEM = "{s}%s "  D_COLOR_RED           "{
 const char HTTP_SNS_COLOR_GREEN[]   PROGMEM = "{s}%s "  D_COLOR_GREEN         "{m}%u "                            "{e}";
 const char HTTP_SNS_COLOR_BLUE[]    PROGMEM = "{s}%s "  D_COLOR_BLUE          "{m}%u "                            "{e}";
 const char HTTP_SNS_MILLILITERS[]   PROGMEM = "{s}%s "  D_VOLUME              "{m}%s " D_UNIT_MILLILITERS         "{e}";
+const char HTTP_SNS_GAS[]           PROGMEM = "{s}%s "  D_GAS                 "{m}%d " D_UNIT_PERCENT          "LEL{e}";
+const char HTTP_SNS_SOC[]           PROGMEM = "{s}%s "  D_SOC                 "{m}%d " D_UNIT_PERCENT             "{e}";
+const char HTTP_SNS_SOH[]           PROGMEM = "{s}%s "  D_SOH                 "{m}%d " D_UNIT_PERCENT             "{e}";
 #endif  // USE_WEBSERVER
 
 #endif  // _I18N_H_

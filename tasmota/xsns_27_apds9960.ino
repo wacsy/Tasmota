@@ -1784,7 +1784,7 @@ void APDS9960_loop(void) {
     enableGestureSensor();
     APDS9960_overload = false;
     Response_P(PSTR("{\"Gesture\":\"On\"}"));
-    MqttPublishPrefixTopic_P(RESULT_OR_TELE, TasmotaGlobal.mqtt_data);  // only after the long break we report, that we are online again
+    MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_TELE, APDS9960_TAG);  // only after the long break we report, that we are online again
     gesture_mode = 1;
   }
 
@@ -1796,7 +1796,7 @@ void APDS9960_loop(void) {
         disableGestureSensor();
         recovery_loop_counter = APDS9960_LONG_RECOVERY;  // long pause after overload/long press - number of stateloops
         Response_P(PSTR("{\"Gesture\":\"Off\"}"));
-        MqttPublishPrefixTopic_P(RESULT_OR_TELE, TasmotaGlobal.mqtt_data);
+        MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_TELE, APDS9960_TAG);
         gesture_mode = 0;
       }
     }
@@ -1806,7 +1806,7 @@ void APDS9960_loop(void) {
 #endif  // USE_APDS9960_GESTURE
 
 void APDS9960_detect(void) {
-  if (APDS9960_type || I2cActive(APDS9960_I2C_ADDR)) { return; }
+  if (APDS9960_type || !I2cSetDevice(APDS9960_I2C_ADDR)) { return; }
 
   APDS9960_type = I2cRead8(APDS9960_I2C_ADDR, APDS9960_ID);
 

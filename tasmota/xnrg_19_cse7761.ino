@@ -95,7 +95,7 @@ struct {
   uint32_t energy[2] = { 0 };
   uint32_t active_power[2] = { 0 };
   uint16_t coefficient[8] = { 0 };
-  uint8_t energy_update = 0;
+  uint8_t energy_update[2] = { 0 };
   uint8_t init = 4;
   uint8_t ready = 0;
 } CSE7761Data;
@@ -137,7 +137,7 @@ bool Cse7761ReadOnce(uint32_t log_level, uint32_t reg, uint32_t size, uint32_t* 
 
   uint8_t buffer[8] = { 0 };
   uint32_t rcvd = 0;
-  uint32_t timeout = millis() + 3;
+  uint32_t timeout = millis() + 6;
 
   while (!TimeReached(timeout) && (rcvd <= size)) {
 //  while (!TimeReached(timeout)) {
@@ -221,15 +221,15 @@ bool Cse7761ChipInit(void) {
     CSE7761Data.coefficient[PowerPAC] = CSE7761_PREF;
 //    CSE7761Data.coefficient[PowerPBC] = 0xADD7;
   }
-  if (HLW_PREF_PULSE == Settings.energy_power_calibration) {
-    Settings.energy_frequency_calibration = CSE7761_FREF;
-    Settings.energy_voltage_calibration = Cse7761Ref(RmsUC);
-    Settings.energy_current_calibration = Cse7761Ref(RmsIAC);
-    Settings.energy_power_calibration = Cse7761Ref(PowerPAC);
+  if (HLW_PREF_PULSE == Settings->energy_power_calibration) {
+    Settings->energy_frequency_calibration = CSE7761_FREF;
+    Settings->energy_voltage_calibration = Cse7761Ref(RmsUC);
+    Settings->energy_current_calibration = Cse7761Ref(RmsIAC);
+    Settings->energy_power_calibration = Cse7761Ref(PowerPAC);
   }
   // Just to fix intermediate users
-  if (Settings.energy_frequency_calibration < CSE7761_FREF / 2) {
-    Settings.energy_frequency_calibration = CSE7761_FREF;
+  if (Settings->energy_frequency_calibration < CSE7761_FREF / 2) {
+    Settings->energy_frequency_calibration = CSE7761_FREF;
   }
 
   Cse7761Write(CSE7761_SPECIAL_COMMAND, CSE7761_CMD_ENABLE_WRITE);
@@ -459,24 +459,24 @@ void Cse7761GetData(void) {
   if (Energy.power_on) {  // Powered on
     // Voltage = RmsU * RmsUC * 10 / 0x400000
     // Energy.voltage[0] = (float)(((uint64_t)CSE7761Data.voltage_rms * CSE7761Data.coefficient[RmsUC] * 10) >> 22) / 1000;  // V
-    Energy.voltage[0] = ((float)CSE7761Data.voltage_rms / Settings.energy_voltage_calibration);  // V
+    Energy.voltage[0] = ((float)CSE7761Data.voltage_rms / Settings->energy_voltage_calibration);  // V
 #ifdef CSE7761_FREQUENCY
-    Energy.frequency[0] = (CSE7761Data.frequency) ? ((float)Settings.energy_frequency_calibration / 8 / CSE7761Data.frequency) : 0;  // Hz
+    Energy.frequency[0] = (CSE7761Data.frequency) ? ((float)Settings->energy_frequency_calibration / 8 / CSE7761Data.frequency) : 0;  // Hz
 #endif
 
     for (uint32_t channel = 0; channel < 2; channel++) {
       Energy.data_valid[channel] = 0;
       // Active power = PowerPA * PowerPAC * 1000 / 0x80000000
       // Energy.active_power[channel] = (float)(((uint64_t)CSE7761Data.active_power[channel] * CSE7761Data.coefficient[PowerPAC + channel] * 1000) >> 31) / 1000;  // W
-      Energy.active_power[channel] = (float)CSE7761Data.active_power[channel] / Settings.energy_power_calibration;  // W
+      Energy.active_power[channel] = (float)CSE7761Data.active_power[channel] / Settings->energy_power_calibration;  // W
       if (0 == Energy.active_power[channel]) {
         Energy.current[channel] = 0;
       } else {
         // Current = RmsIA * RmsIAC / 0x800000
         // Energy.current[channel] = (float)(((uint64_t)CSE7761Data.current_rms[channel] * CSE7761Data.coefficient[RmsIAC + channel]) >> 23) / 1000;  // A
-        Energy.current[channel] = (float)CSE7761Data.current_rms[channel] / Settings.energy_current_calibration;  // A
+        Energy.current[channel] = (float)CSE7761Data.current_rms[channel] / Settings->energy_current_calibration;  // A
         CSE7761Data.energy[channel] += Energy.active_power[channel];
-        CSE7761Data.energy_update++;
+        CSE7761Data.energy_update[channel]++;
       }
     }
   }
@@ -516,13 +516,13 @@ void Cse7761DumpRegs(void) {
   for (uint32_t i = 0; i < 23; i++) {
     snprintf_P(reg_data, sizeof(reg_data), PSTR("%s%s%8X"), reg_data, (i) ? "," : "", reg_num[i]);
   }
-  AddLog_P(LOG_LEVEL_DEBUG, PSTR("C61: RegDump %s"), reg_data);
+  AddLog(LOG_LEVEL_DEBUG, PSTR("C61: RegDump %s"), reg_data);
 
   reg_data[0] = '\0';
   for (uint32_t i = 0; i < 23; i++) {
     snprintf_P(reg_data, sizeof(reg_data), PSTR("%s%s%08X"), reg_data, (i) ? "," : "", registers[i]);
   }
-  AddLog_P(LOG_LEVEL_DEBUG, PSTR("C61: RegDump %s"), reg_data);
+  AddLog(LOG_LEVEL_DEBUG, PSTR("C61: RegDump %s"), reg_data);
 }
 */
 
@@ -557,16 +557,14 @@ void Cse7761EverySecond(void) {
   }
   else {
     if (2 == CSE7761Data.ready) {
-      if (CSE7761Data.energy_update) {
-        uint32_t energy_sum = ((CSE7761Data.energy[0] + CSE7761Data.energy[1]) * 1000) / CSE7761Data.energy_update;
-        if (energy_sum) {
-          Energy.kWhtoday_delta += energy_sum / 36;
-          EnergyUpdateToday();
+      for (uint32_t channel = 0; channel < 2; channel++) {
+        if (CSE7761Data.energy_update[channel]) {
+          Energy.kWhtoday_delta[channel] += ((CSE7761Data.energy[channel] * 1000) / CSE7761Data.energy_update[channel]) / 36;
+          CSE7761Data.energy[channel] = 0;
+          CSE7761Data.energy_update[channel] = 0;
         }
+        EnergyUpdateToday();
       }
-      CSE7761Data.energy[0] = 0;
-      CSE7761Data.energy[1] = 0;
-      CSE7761Data.energy_update = 0;
     }
   }
 }
@@ -600,6 +598,7 @@ void Cse7761DrvInit(void) {
 #ifdef CSE7761_FREQUENCY
     Energy.frequency_common = true;             // Use common frequency
 #endif
+    Energy.use_overtemp = true;                 // Use global temperature for overtemp detection
     TasmotaGlobal.energy_driver = XNRG_19;
   }
 }
@@ -617,7 +616,7 @@ bool Cse7761Command(void) {
   else if (CMND_POWERSET == Energy.command_code) {
     if (XdrvMailbox.data_len && CSE7761Data.active_power[channel]) {
       if ((value > 100) && (value < 200000)) {  // Between 1W and 2000W
-        Settings.energy_power_calibration = ((CSE7761Data.active_power[channel]) / value) * 100;
+        Settings->energy_power_calibration = ((CSE7761Data.active_power[channel]) / value) * 100;
       }
     }
   }
@@ -628,7 +627,7 @@ bool Cse7761Command(void) {
   else if (CMND_VOLTAGESET == Energy.command_code) {
     if (XdrvMailbox.data_len && CSE7761Data.voltage_rms) {
       if ((value > 10000) && (value < 26000)) {  // Between 100V and 260V
-        Settings.energy_voltage_calibration = (CSE7761Data.voltage_rms * 100) / value;
+        Settings->energy_voltage_calibration = (CSE7761Data.voltage_rms * 100) / value;
       }
     }
   }
@@ -639,7 +638,7 @@ bool Cse7761Command(void) {
   else if (CMND_CURRENTSET == Energy.command_code) {
     if (XdrvMailbox.data_len && CSE7761Data.current_rms[channel]) {
       if ((value > 1000) && (value < 1000000)) {  // Between 10mA and 10A
-        Settings.energy_current_calibration = ((CSE7761Data.current_rms[channel] * 100) / value) * 1000;
+        Settings->energy_current_calibration = ((CSE7761Data.current_rms[channel] * 100) / value) * 1000;
       }
     }
   }
@@ -651,7 +650,7 @@ bool Cse7761Command(void) {
   else if (CMND_FREQUENCYSET == Energy.command_code) {
     if (XdrvMailbox.data_len && CSE7761Data.frequency) {
       if ((value > 4500) && (value < 6500)) {  // Between 45.00Hz and 65.00Hz
-        Settings.energy_frequency_calibration = (CSE7761Data.frequency * 8 * value) / 100;
+        Settings->energy_frequency_calibration = (CSE7761Data.frequency * 8 * value) / 100;
       }
     }
   }

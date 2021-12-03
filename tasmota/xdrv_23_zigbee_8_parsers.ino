@@ -521,7 +521,7 @@ int32_t EZ_GotoIfResetConfig(uint8_t value) {
 // If router goto ZIGBEE_LABEL_START_ROUTER
 // If device goto ZIGBEE_LABEL_START_DEVICE
 int32_t Z_SwitchDeviceType(int32_t res, SBuffer &buf) {
-  switch (Settings.zb_pan_id) {
+  switch (Settings->zb_pan_id) {
     case 0xFFFF:    return ZIGBEE_LABEL_INIT_ROUTER;
     case 0xFFFE:    return ZIGBEE_LABEL_INIT_DEVICE;
     default:        return 0;   // continue
@@ -638,7 +638,7 @@ int32_t Z_ReceiveActiveEp(int32_t res, const SBuffer &buf) {
   for (uint32_t i = 0; i < activeEpCount; i++) {
     uint8_t ep = activeEpList[i];
     zigbee_devices.getShortAddr(nwkAddr).addEndpoint(ep);
-    if ((i < 4) && (ep < 0x10)) {
+    if ((i < USE_ZIGBEE_AUTOBIND_MAX_ENDPOINTS) && (ep < USE_ZIGBEE_AUTOBIND_MAX_CLUSTER)) {
       zigbee_devices.queueTimer(nwkAddr, 0 /* groupaddr */, 1500, ep /* fake cluster as ep */, ep, Z_CAT_EP_DESC, 0 /* value */, &Z_SendSimpleDescReq);
     }
   }
@@ -764,7 +764,7 @@ int32_t Z_ReceiveSimpleDesc(int32_t res, const SBuffer &buf) {
     // device is reachable
     zigbee_devices.deviceWasReached(nwkAddr);
 
-    if (!Settings.flag4.zb_disable_autobind) {
+    if (!Settings->flag4.zb_disable_autobind) {
       Z_AutoBindDefer(nwkAddr, endpoint, buf, numInIndex, numInCluster, numOutIndex, numOutCluster);
     }
 
@@ -785,8 +785,7 @@ int32_t Z_ReceiveSimpleDesc(int32_t res, const SBuffer &buf) {
       ResponseAppend_P(PSTR("\"0x%04X\""), buf.get16(numOutIndex + i*2));
     }
     ResponseAppend_P(PSTR("]}}"));
-    MqttPublishPrefixTopic_P(RESULT_OR_TELE, PSTR(D_JSON_ZIGBEEZCL_RECEIVED));
-    XdrvRulesProcess();
+    MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_TELE, PSTR(D_JSON_ZIGBEEZCL_RECEIVED));
   }
 
   // If tuya protocol, change the model information
@@ -1220,7 +1219,7 @@ int32_t Z_Mgmt_Lqi_Bind_Rsp(int32_t res, const SBuffer &buf, boolean lqi) {
         dstep = buf.get8(idx + 20);
         idx += 21;
       } else {
-        //AddLog_P(LOG_LEVEL_INFO, PSTR("ZNP_MgmtBindRsp unknwon address mode %d"), addrmode);
+        //AddLog(LOG_LEVEL_INFO, PSTR("ZNP_MgmtBindRsp unknwon address mode %d"), addrmode);
         break;                                      // abort for any other value since we don't know the length of the field
       }
 
@@ -1452,7 +1451,7 @@ void Z_SendCIEZoneEnrollResponse(uint16_t shortaddr, uint16_t groupaddr, uint16_
 void Z_AutoBind(uint16_t shortaddr, uint16_t groupaddr, uint16_t cluster, uint8_t endpoint, uint32_t value) {
   uint64_t srcLongAddr = zigbee_devices.getDeviceLongAddr(shortaddr);
 
-  AddLog_P(LOG_LEVEL_INFO, PSTR(D_LOG_ZIGBEE "auto-bind `ZbBind {\"Device\":\"0x%04X\",\"Endpoint\":%d,\"Cluster\":\"0x%04X\"}`"),
+  AddLog(LOG_LEVEL_INFO, PSTR(D_LOG_ZIGBEE "auto-bind `ZbBind {\"Device\":\"0x%04X\",\"Endpoint\":%d,\"Cluster\":\"0x%04X\"}`"),
                                   shortaddr, endpoint, cluster);
 #ifdef USE_ZIGBEE_ZNP
   SBuffer buf(34);
@@ -1578,7 +1577,7 @@ void Z_AutoConfigReportingForCluster(uint16_t shortaddr, uint16_t groupaddr, uin
   ResponseAppend_P(PSTR("}}"));
 
   if (buf.len() > 0) {
-    AddLog_P(LOG_LEVEL_INFO, PSTR(D_LOG_ZIGBEE "auto-bind `%s`"), TasmotaGlobal.mqtt_data);
+    AddLog(LOG_LEVEL_INFO, PSTR(D_LOG_ZIGBEE "auto-bind `%s`"), ResponseData());
     ZCLMessage zcl(buf.len());   // message is 4 bytes
     zcl.shortaddr = shortaddr;
     zcl.cluster = cluster;
@@ -1681,7 +1680,7 @@ void Z_IncomingMessage(class ZCLFrame &zcl_received) {
       zcl_received.parseClusterSpecificCommand(attr_list);
     }
 
-    AddLog_P(LOG_LEVEL_DEBUG, PSTR(D_LOG_ZIGBEE D_JSON_ZIGBEEZCL_RAW_RECEIVED ": {\"0x%04X\":{%s}}"), srcaddr, attr_list.toString().c_str());
+    AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_ZIGBEE D_JSON_ZIGBEEZCL_RAW_RECEIVED ": {\"0x%04X\":{%s}}"), srcaddr, attr_list.toString().c_str());
 
     // discard the message if it was sent by us (broadcast or group loopback)
     if (srcaddr == localShortAddr) {
@@ -2018,15 +2017,15 @@ int32_t ZNP_Recv_Default(int32_t res, const SBuffer &buf) {
 //
 // Callback for loading preparing EEPROM, called by the state machine
 //
-#ifdef USE_ZIGBEE_EZSP
-int32_t Z_Prepare_EEPROM(uint8_t value) {
+int32_t Z_Prepare_Storage(uint8_t value) {
+#ifdef USE_ZIGBEE_EEPROM
   ZFS::initOrFormat();
+#endif
   return 0;                              // continue
 }
-#endif // USE_ZIGBEE_EZSP
 
 //
-// Callback for loading Zigbee configuration from Flash, called by the state machine
+// Callback for loading Zigbee configuration, called by the state machine
 //
 int32_t Z_Load_Devices(uint8_t value) {
   // try to hidrate from known devices
@@ -2037,8 +2036,8 @@ int32_t Z_Load_Devices(uint8_t value) {
 //
 // Callback for loading Zigbee data from EEPROM, called by the state machine
 //
-int32_t Z_Load_Data_EEPROM(uint8_t value) {
-  hydrateDevicesDataFromEEPROM();
+int32_t Z_Load_Data(uint8_t value) {
+  hydrateDevicesData();
   return 0;                              // continue
 }
 
@@ -2068,7 +2067,7 @@ void Z_Query_Bulb(uint16_t shortaddr, uint32_t &wait_ms) {
 // Send messages to query the state of each Hue emulated light
 //
 int32_t Z_Query_Bulbs(uint8_t value) {
-  if (!Settings.flag5.zb_disable_autoquery) {
+  if (!Settings->flag5.zb_disable_autoquery) {
     // Scan all devices and send deferred requests to know the state of bulbs
     uint32_t wait_ms = 1000;                  // start with 1.0 s delay
     for (uint32_t i = 0; i < zigbee_devices.devicesSize(); i++) {
@@ -2142,10 +2141,10 @@ void ZCLFrame::autoResponder(const uint16_t *attr_list_ids, size_t attr_len) {
         attr.setUInt((Rtc.utc_time > START_VALID_TIME) ? 0x02 : 0x00);
         break;
       case 0x000A0002:    // TimeZone
-        attr.setUInt(Settings.toffset[0] * 60);
+        attr.setUInt(Settings->toffset[0] * 60);
         break;
       case 0x000A0007:    // LocalTime    // TODO take DST
-        attr.setUInt(Settings.toffset[0] * 60 + ((Rtc.utc_time > START_VALID_TIME) ? Rtc.utc_time - 946684800 : Rtc.utc_time));
+        attr.setUInt(Settings->toffset[0] * 60 + ((Rtc.utc_time > START_VALID_TIME) ? Rtc.utc_time - 946684800 : Rtc.utc_time));
         break;
     }
     if (!attr.isNone()) {
@@ -2165,7 +2164,7 @@ void ZCLFrame::autoResponder(const uint16_t *attr_list_ids, size_t attr_len) {
     // we have a non-empty output
 
     // log first
-    AddLog_P(LOG_LEVEL_INFO, PSTR("ZIG: Auto-responder: ZbSend {\"Device\":\"0x%04X\""
+    AddLog(LOG_LEVEL_INFO, PSTR("ZIG: Auto-responder: ZbSend {\"Device\":\"0x%04X\""
                                           ",\"Cluster\":\"0x%04X\""
                                           ",\"Endpoint\":%d"
                                           ",\"Response\":%s}"

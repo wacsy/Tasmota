@@ -14,11 +14,9 @@
 
 #ifndef COMPONENTS_NIMBLEREMOTECHARACTERISTIC_H_
 #define COMPONENTS_NIMBLEREMOTECHARACTERISTIC_H_
-#include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
 #include "nimconfig.h"
-#if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
 #include "NimBLERemoteService.h"
 #include "NimBLERemoteDescriptor.h"
@@ -148,22 +146,23 @@ private:
     static int        descriptorDiscCB(uint16_t conn_handle, const struct ble_gatt_error *error,
                                        uint16_t chr_val_handle, const struct ble_gatt_dsc *dsc,
                                        void *arg);
+    static int        nextCharCB(uint16_t conn_handle, const struct ble_gatt_error *error,
+                                 const struct ble_gatt_chr *chr, void *arg);
 
     // Private properties
     NimBLEUUID              m_uuid;
     uint8_t                 m_charProp;
     uint16_t                m_handle;
     uint16_t                m_defHandle;
+    uint16_t                m_endHandle;
     NimBLERemoteService*    m_pRemoteService;
     std::string             m_value;
     notify_callback         m_notifyCallback;
     time_t                  m_timestamp;
-    portMUX_TYPE            m_valMux;
 
     // We maintain a vector of descriptors owned by this characteristic.
     std::vector<NimBLERemoteDescriptor*> m_descriptorVector;
 }; // NimBLERemoteCharacteristic
 
-#endif // #if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)
-#endif /* CONFIG_BT_ENABLED */
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */
 #endif /* COMPONENTS_NIMBLEREMOTECHARACTERISTIC_H_ */

@@ -181,7 +181,8 @@ void FifLEEvery250ms(void)
           break;
 
         case 7:
-          Le01mr.total_active = value_buff * 0.01f; // [kWh]
+          Energy.import_active[0] = value_buff * 0.01f; // [kWh]
+          Le01mr.total_active = Energy.import_active[0];  // Useless
           break;
 
         case 8:
@@ -193,7 +194,7 @@ void FifLEEvery250ms(void)
       if (Le01mr.read_state == Le01mr.start_address_count) {
         Le01mr.read_state = 0;
 
-        EnergyUpdateTotal(Le01mr.total_active, true);
+        EnergyUpdateTotal();
       }
     }
   } // end data ready
@@ -245,9 +246,9 @@ const char HTTP_ENERGY_LE01MR[] PROGMEM =
 void FifLEShow(bool json)
 {
   char total_reactive_chr[FLOATSZ];
-  dtostrfd(Le01mr.total_reactive, Settings.flag2.energy_resolution, total_reactive_chr);
+  dtostrfd(Le01mr.total_reactive, Settings->flag2.energy_resolution, total_reactive_chr);
   char total_active_chr[FLOATSZ];
-  dtostrfd(Le01mr.total_active, Settings.flag2.energy_resolution, total_active_chr);
+  dtostrfd(Le01mr.total_active, Settings->flag2.energy_resolution, total_active_chr);
 
   if (json) {
     ResponseAppend_P(PSTR(",\"" D_JSON_TOTAL_ACTIVE "\":%s,\"" D_JSON_TOTAL_REACTIVE "\":%s"),

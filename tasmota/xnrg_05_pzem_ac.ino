@@ -77,18 +77,12 @@ void PzemAcEverySecond(void)
         Energy.active_power[PzemAc.phase] = (float)((buffer[11] << 24) + (buffer[12] << 16) + (buffer[9] << 8) + buffer[10]) / 10.0;  // 429496729.0 W
         Energy.frequency[PzemAc.phase] = (float)((buffer[17] << 8) + buffer[18]) / 10.0;                                              // 50.0 Hz
         Energy.power_factor[PzemAc.phase] = (float)((buffer[19] << 8) + buffer[20]) / 100.0;                                          // 1.00
-
-        PzemAc.energy += (float)((buffer[15] << 24) + (buffer[16] << 16) + (buffer[13] << 8) + buffer[14]);                           // 4294967295 Wh
+        Energy.import_active[PzemAc.phase] = (float)((buffer[15] << 24) + (buffer[16] << 16) + (buffer[13] << 8) + buffer[14]) / 1000.0;  // 4294967.295 kWh
         if (PzemAc.phase == Energy.phase_count -1) {
-          if (PzemAc.energy > PzemAc.last_energy) {  // Handle missed phase
-            if (TasmotaGlobal.uptime > PZEM_AC_STABILIZE) {
-              EnergyUpdateTotal(PzemAc.energy, false);
-            }
-            PzemAc.last_energy = PzemAc.energy;
+          if (TasmotaGlobal.uptime > PZEM_AC_STABILIZE) {
+            EnergyUpdateTotal();
           }
-          PzemAc.energy = 0;
         }
-
       }
     }
   }
@@ -111,6 +105,9 @@ void PzemAcEverySecond(void)
     PzemAc.send_retry--;
     if ((Energy.phase_count > 1) && (0 == PzemAc.send_retry) && (TasmotaGlobal.uptime < PZEM_AC_STABILIZE)) {
       Energy.phase_count--;  // Decrement phases if no response after retry within 30 seconds after restart
+      if (TasmotaGlobal.discovery_counter) {
+        TasmotaGlobal.discovery_counter += ENERGY_WATCHDOG + 1;  // Don't send Discovery yet, delay by 4s + 1s
+      }
     }
   }
 }
@@ -121,7 +118,7 @@ void PzemAcSnsInit(void)
   uint8_t result = PzemAcModbus->Begin(9600);
   if (result) {
     if (2 == result) { ClaimSerial(); }
-    Energy.phase_count = 3;  // Start off with three phases
+    Energy.phase_count = ENERGY_MAX_PHASES;  // Start off with three phases
     PzemAc.phase = 0;
   } else {
     TasmotaGlobal.energy_driver = ENERGY_NONE;

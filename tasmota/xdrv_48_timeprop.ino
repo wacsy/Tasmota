@@ -93,11 +93,6 @@
 enum TimepropCommands { CMND_TIMEPROP_SETPOWER };
 const char kTimepropCommands[] PROGMEM = D_CMND_TIMEPROP_SETPOWER;
 
-static Timeprop timeprops[TIMEPROP_NUM_OUTPUTS];
-static int relayNos[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_RELAYS};
-static long currentRelayStates = 0;  // current actual relay states. Bit 0 first relay
-
-
 #ifndef TIMEPROP_NUM_OUTPUTS
 #define TIMEPROP_NUM_OUTPUTS          1       // how many outputs to control (with separate alogorithm for each)
 #endif
@@ -119,6 +114,10 @@ static long currentRelayStates = 0;  // current actual relay states. Bit 0 first
 #ifndef TIMEPROP_RELAYS
 #define TIMEPROP_RELAYS               1       // which relay to control 1:8
 #endif
+
+static Timeprop timeprops[TIMEPROP_NUM_OUTPUTS];
+static int relayNos[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_RELAYS};
+static long currentRelayStates = 0;  // current actual relay states. Bit 0 first relay
 
 struct {
   Timeprop timeprops[TIMEPROP_NUM_OUTPUTS];
@@ -184,7 +183,7 @@ bool TimepropCommand()
   bool serviced = true;
   uint8_t ua_prefix_len = strlen(D_CMND_TIMEPROP); // to detect prefix of command
   /*
-  AddLog_P(LOG_LEVEL_INFO, PSTR("Command called: "
+  AddLog(LOG_LEVEL_INFO, PSTR("Command called: "
     "index: %d data_len: %d payload: %d topic: %s data: %s"),
     XdrvMailbox.index,
     XdrvMailbox.data_len,
@@ -197,7 +196,7 @@ bool TimepropCommand()
     int command_code = GetCommandCode(command, sizeof(command), XdrvMailbox.topic + ua_prefix_len, kTimepropCommands);
     if (CMND_TIMEPROP_SETPOWER == command_code) {
       /*
-      AddLog_P(LOG_LEVEL_INFO, PSTR("Timeprop command timeprop_setpower: "
+      AddLog(LOG_LEVEL_INFO, PSTR("Timeprop command timeprop_setpower: "
         "index: %d data_len: %d payload: %d topic: %s data: %s"),
 	      XdrvMailbox.index,
 	      XdrvMailbox.data_len,
@@ -208,8 +207,7 @@ bool TimepropCommand()
       if (XdrvMailbox.index >=0 && XdrvMailbox.index < TIMEPROP_NUM_OUTPUTS) {
         timeprops[XdrvMailbox.index].setPower( atof(XdrvMailbox.data), Tprop.current_time_secs );
       }
-      snprintf_P(TasmotaGlobal.mqtt_data, sizeof(TasmotaGlobal.mqtt_data), PSTR("{\"" D_CMND_TIMEPROP D_CMND_TIMEPROP_SETPOWER "%d\":\"%s\"}"),
-        XdrvMailbox.index, XdrvMailbox.data);
+      Response_P(PSTR("{\"" D_CMND_TIMEPROP D_CMND_TIMEPROP_SETPOWER "%d\":\"%s\"}"), XdrvMailbox.index, XdrvMailbox.data);
     }
     else {
       serviced = false;

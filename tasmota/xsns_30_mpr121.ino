@@ -219,7 +219,7 @@ void Mpr121Init(struct mpr121 *pS, bool initial)
 	// Loop through I2C addresses
 	for (uint32_t i = 0; i < sizeof(pS->i2c_addr[i]); i++) {
 
-    if (initial && I2cActive(pS->i2c_addr[i])) { continue; }
+    if (initial && !I2cSetDevice(pS->i2c_addr[i])) { continue; }
 
 		// Soft reset sensor and check if connected at I2C address
 		pS->connected[i] = (I2cWrite8(pS->i2c_addr[i], MPR121_SRST_REG, MPR121_SRST_VAL)
@@ -362,7 +362,7 @@ void Mpr121Show(struct mpr121 *pS, uint8_t function)
 				if ((FUNC_EVERY_50_MSECOND == function)
 				    && (BITC(i, j) != BITP(i, j))) {
 					Response_P(PSTR("{\"MPR121%c\":{\"Button%i\":%i}}"), pS->id[i], j, BITC(i, j));
-					MqttPublishPrefixTopic_P(RESULT_OR_STAT, TasmotaGlobal.mqtt_data);
+					MqttPublishPrefixTopicRulesProcess_P(RESULT_OR_STAT, PSTR("MPR121"));
 				}
 				// Add buttons to web string
 #ifdef USE_WEBSERVER

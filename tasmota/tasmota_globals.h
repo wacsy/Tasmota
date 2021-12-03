@@ -130,8 +130,6 @@ String EthernetMacAddress(void);
 #define ARDUINO_CORE_RELEASE        ARDUINO_ESP32_RELEASE
 #endif  // ARDUINO_ESP32_RELEASE
 
-#define USE_UFILESYS
-
 #undef FIRMWARE_MINIMAL                            // Minimal is not supported as not needed
 
 // Hardware has no ESP32
@@ -159,41 +157,12 @@ String EthernetMacAddress(void);
 #endif  // ESP32
 
 /*********************************************************************************************\
- * Mandatory defines satisfying disabled defines
+ * Fallback parameters
 \*********************************************************************************************/
 
-#ifdef USE_EMULATION_HUE
-#define USE_EMULATION
-#endif
-#ifdef USE_EMULATION_WEMO
-#define USE_EMULATION
-#endif
-
-// Convert legacy slave to client
-#ifdef USE_TASMOTA_SLAVE
-#define USE_TASMOTA_CLIENT
-#endif
-#ifdef USE_TASMOTA_SLAVE_FLASH_SPEED
-#define USE_TASMOTA_CLIENT_FLASH_SPEED USE_TASMOTA_SLAVE_FLASH_SPEED
-#endif
-#ifdef USE_TASMOTA_SLAVE_SERIAL_SPEED
-#define USE_TASMOTA_CLIENT_SERIAL_SPEED USE_TASMOTA_SLAVE_SERIAL_SPEED
-#endif
-
-#ifdef USE_SCRIPT
-#define USE_UNISHOX_COMPRESSION                // Add support for string compression
-#endif
-#ifdef USE_ZIGBEE
-#define USE_UNISHOX_COMPRESSION                // Add support for string compression
-#endif
-#ifdef USE_EMULATION_HUE
-#define USE_UNISHOX_COMPRESSION                // Add support for string compression
-#endif
-
-#ifdef USE_PID
+#if defined(USE_PID) && (!defined(PID_USE_TIMPROP) || (PID_USE_TIMPROP > 0))
 #define USE_TIMEPROP
 #endif
-
                                                // See https://github.com/esp8266/Arduino/pull/4889
 #undef NO_EXTRA_4K_HEAP                        // Allocate 4k heap for WPS in ESP8166/Arduino core v2.4.2 (was always allocated in previous versions)
 
@@ -244,8 +213,6 @@ String EthernetMacAddress(void);
 #define WS2812_LEDS                 30         // [Pixels] Number of LEDs
 #endif
 
-const uint16_t LOG_BUFFER_SIZE = 4000;         // Max number of characters in logbuffer used by weblog, syslog and mqttlog
-
 #if defined(ARDUINO_ESP8266_RELEASE_2_3_0) || defined(ARDUINO_ESP8266_RELEASE_2_4_0) || defined(ARDUINO_ESP8266_RELEASE_2_4_1) || defined(ARDUINO_ESP8266_RELEASE_2_4_2) || defined(ARDUINO_ESP8266_RELEASE_2_5_0) || defined(ARDUINO_ESP8266_RELEASE_2_5_1) || defined(ARDUINO_ESP8266_RELEASE_2_5_2)
   #error "Arduino ESP8266 Core versions before 2.7.1 are not supported"
 #endif
@@ -260,18 +227,24 @@ const uint16_t LOG_BUFFER_SIZE = 4000;         // Max number of characters in lo
 #define TASM_FILE_SETTINGS_LKG      "/.settings.lkg"   // Last Known Good Settings binary blob
 #define TASM_FILE_DRIVER            "/.drvset%03d"
 #define TASM_FILE_SENSOR            "/.snsset%03d"
-#define TASM_FILE_ZIGBEE            "/zb"              // Zigbee settings blob as used by CC2530 on ESP32
+#define TASM_FILE_TLSKEY            "/tlskey"          // TLS private key
+#define TASM_FILE_ZIGBEE            "/zb"              // Zigbee devices information blob
+#define TASM_FILE_ZIGBEE_DATA       "/zbdata"          // Zigbee last known values of devices
 #define TASM_FILE_AUTOEXEC          "/autoexec.bat"    // Commands executed after restart
 #define TASM_FILE_CONFIG            "/config.sys"      // Settings executed after restart
 
 #ifndef MQTT_MAX_PACKET_SIZE
 #define MQTT_MAX_PACKET_SIZE        1200       // Bytes
+//#define MQTT_MAX_PACKET_SIZE        2048       // Bytes
 #endif
 #ifndef MQTT_KEEPALIVE
 #define MQTT_KEEPALIVE              30         // Seconds
 #endif
 #ifndef MQTT_SOCKET_TIMEOUT
 #define MQTT_SOCKET_TIMEOUT         4          // Seconds
+#endif
+#ifndef MQTT_WIFI_CLIENT_TIMEOUT
+#define MQTT_WIFI_CLIENT_TIMEOUT    200        // Wifi TCP connection timeout (default is 5000 mSec)
 #endif
 #ifndef MQTT_CLEAN_SESSION
 #define MQTT_CLEAN_SESSION          1          // 0 = No clean session, 1 = Clean session (default)
@@ -284,8 +257,7 @@ const uint16_t LOG_BUFFER_SIZE = 4000;         // Max number of characters in lo
 #endif
 
 #ifndef MESSZ
-//#define MESSZ                       1040     // Max number of characters in JSON message string (Hass discovery and nice MQTT_MAX_PACKET_SIZE = 1200)
-#define MESSZ                       (MQTT_MAX_PACKET_SIZE -TOPSZ -7)  // Max number of characters in JSON message string
+#define MESSZ                       1040       // Max number of characters in JSON message string (Hass discovery and nice MQTT_MAX_PACKET_SIZE = 1200)
 #endif
 
 #ifndef USE_DEVICE_GROUPS
@@ -370,6 +342,25 @@ const uint16_t LOG_BUFFER_SIZE = 4000;         // Max number of characters in lo
 #endif
 #ifndef STARTING_OFFSET
 #define STARTING_OFFSET             30         // NOVA SDS parameter used in settings
+#endif
+
+#ifndef WIFI_RGX_STATE
+#define WIFI_RGX_STATE              0
+#endif
+#ifndef WIFI_RGX_NAPT
+#define WIFI_RGX_NAPT               0
+#endif
+#ifndef WIFI_RGX_SSID
+#define WIFI_RGX_SSID               ""
+#endif
+#ifndef WIFI_RGX_PASSWORD
+#define WIFI_RGX_PASSWORD           ""
+#endif
+#ifndef WIFI_RGX_IP_ADDRESS
+#define WIFI_RGX_IP_ADDRESS         "192.168.99.1"
+#endif
+#ifndef WIFI_RGX_SUBNETMASK
+#define WIFI_RGX_SUBNETMASK         "255.255.255.0"
 #endif
 
 /*********************************************************************************************\
@@ -478,26 +469,48 @@ bool first_device_group_is_local = true;
 #endif  // USE_DEVICE_GROUPS
 
 #ifdef DEBUG_TASMOTA_CORE
-#define DEBUG_CORE_LOG(...) AddLog_Debug(__VA_ARGS__)
+#define DEBUG_CORE_LOG(...) AddLog(LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define DEBUG_CORE_LOG(...)
 #endif
 #ifdef DEBUG_TASMOTA_DRIVER
-#define DEBUG_DRIVER_LOG(...) AddLog_Debug(__VA_ARGS__)
+#define DEBUG_DRIVER_LOG(...) AddLog(LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define DEBUG_DRIVER_LOG(...)
 #endif
 #ifdef DEBUG_TASMOTA_SENSOR
-#define DEBUG_SENSOR_LOG(...) AddLog_Debug(__VA_ARGS__)
+#define DEBUG_SENSOR_LOG(...) AddLog(LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define DEBUG_SENSOR_LOG(...)
 #endif
 #ifdef DEBUG_TASMOTA_TRACE
-#define DEBUG_TRACE_LOG(...) AddLog_Debug(__VA_ARGS__)
+#define DEBUG_TRACE_LOG(...) AddLog(LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define DEBUG_TRACE_LOG(...)
 #endif
 
+#ifdef USE_DEBUG_DRIVER
+#define SHOW_FREE_MEM(WHERE) ShowFreeMem(WHERE);
+#else
+#define SHOW_FREE_MEM(WHERE)
+#endif
+
+#ifndef USE_PROFILING
+#undef USE_PROFILE_DRIVER
+#undef USE_PROFILE_FUNCTION
+#endif
+
+#ifdef USE_PROFILE_DRIVER
+#define PROFILE_DRIVER(DRIVER, FUNCTION, START) AddLogDriver(DRIVER, FUNCTION, START)
+#else
+#define PROFILE_DRIVER(DRIVER, FUNCTION, START)
+#endif  // USE_PROFILE_DRIVER
+
+#ifdef USE_PROFILE_FUNCTION
+#define PROFILE_FUNCTION(DRIVER, INDEX, FUNCTION, START) AddLogFunction(DRIVER, INDEX, FUNCTION, START)
+#else
+#define PROFILE_FUNCTION(DRIVER, INDEX, FUNCTION, START)
+#endif  // USE_PROFILE_DRIVER
 
 /*********************************************************************************************\
  * Macro for SetOption synonyms

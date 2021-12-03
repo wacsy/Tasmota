@@ -24,26 +24,26 @@
  *
  * light_scheme  WS2812  3+ Colors  1+2 Colors  Effect
  * ------------  ------  ---------  ----------  -----------------
- *  0            yes     no         no          Clock
- *  1            yes     no         no          Incandescent
- *  2            yes     no         no          RGB
- *  3            yes     no         no          Christmas
- *  4            yes     no         no          Hanukkah
- *  5            yes     no         no          Kwanzaa
- *  6            yes     no         no          Rainbow
- *  7            yes     no         no          Fire
- *
+ *  0 (5)        yes     no         no          Clock
+ *  1 (6)        yes     no         no          Incandescent
+ *  2 (7)        yes     no         no          RGB
+ *  3 (8)        yes     no         no          Christmas
+ *  4 (9)        yes     no         no          Hanukkah
+ *  5 (10)       yes     no         no          Kwanzaa
+ *  6 (11)       yes     no         no          Rainbow
+ *  7 (12)       yes     no         no          Fire
+ *  8 (13)       yes     no         no          Stairs
 \*********************************************************************************************/
 
 #define XLGT_01             1
 
-const uint8_t WS2812_SCHEMES = 8;      // Number of WS2812 schemes
+const uint8_t WS2812_SCHEMES = 9;      // Number of WS2812 schemes
 
 const char kWs2812Commands[] PROGMEM = "|"  // No prefix
-  D_CMND_LED "|" D_CMND_PIXELS "|" D_CMND_ROTATION "|" D_CMND_WIDTH ;
+  D_CMND_LED "|" D_CMND_PIXELS "|" D_CMND_ROTATION "|" D_CMND_WIDTH "|" D_CMND_STEPPIXELS ;
 
 void (* const Ws2812Command[])(void) PROGMEM = {
-  &CmndLed, &CmndPixels, &CmndRotation, &CmndWidth };
+  &CmndLed, &CmndPixels, &CmndRotation, &CmndWidth, &CmndStepPixels };
 
 #include <NeoPixelBus.h>
 
@@ -69,7 +69,7 @@ void (* const Ws2812Command[])(void) PROGMEM = {
 #elif (USE_WS2812_CTYPE == NEO_RBG)
   #define NEO_FEATURE_TYPE  Rbg
 #elif (USE_WS2812_CTYPE == NEO_RGBW)
-  #define NEO_FEATURE_TYPE  Rbgw
+  #define NEO_FEATURE_TYPE  Rgbw
 #elif (USE_WS2812_CTYPE == NEO_GRBW)
   #define NEO_FEATURE_TYPE  Grbw
 #else
@@ -166,6 +166,7 @@ WsColor kHanukkah[2] = { 0,0,255, 255,255,255 };
 WsColor kwanzaa[3] = { 255,0,0, 0,0,0, 0,255,0 };
 WsColor kRainbow[7] = { 255,0,0, 255,128,0, 255,255,0, 0,255,0, 0,0,255, 128,0,255, 255,0,255 };
 WsColor kFire[3] = { 255,0,0, 255,102,0, 255,192,0 };
+WsColor kStairs[2] = { 0,0,0, 255,255,255 };
 ColorScheme kSchemes[WS2812_SCHEMES -1] = {  // Skip clock scheme
   kIncandescent, 2,
   kRgb, 3,
@@ -173,7 +174,8 @@ ColorScheme kSchemes[WS2812_SCHEMES -1] = {  // Skip clock scheme
   kHanukkah, 2,
   kwanzaa, 3,
   kRainbow, 7,
-  kFire, 3 };
+  kFire, 3,
+  kStairs, 2 };
 
 uint8_t kWidth[5] = {
     1,     // Small
@@ -209,8 +211,8 @@ void Ws2812StripShow(void)
   RgbColor c;
 #endif
 
-  if (Settings.light_correction) {
-    for (uint32_t i = 0; i < Settings.light_pixels; i++) {
+  if (Settings->light_correction) {
+    for (uint32_t i = 0; i < Settings->light_pixels; i++) {
       c = strip->GetPixelColor(i);
       c.R = ledGamma(c.R);
       c.G = ledGamma(c.G);
@@ -239,10 +241,10 @@ void Ws2812UpdatePixelColor(int position, struct WsColor hand_color, float offse
   RgbColor color;
 #endif
 
-  uint32_t mod_position = mod(position, (int)Settings.light_pixels);
+  uint32_t mod_position = mod(position, (int)Settings->light_pixels);
 
   color = strip->GetPixelColor(mod_position);
-  float dimmer = 100 / (float)Settings.light_dimmer;
+  float dimmer = 100 / (float)Settings->light_dimmer;
   color.R = tmin(color.R + ((hand_color.red / dimmer) * offset), 255);
   color.G = tmin(color.G + ((hand_color.green / dimmer) * offset), 255);
   color.B = tmin(color.B + ((hand_color.blue / dimmer) * offset), 255);
@@ -251,16 +253,16 @@ void Ws2812UpdatePixelColor(int position, struct WsColor hand_color, float offse
 
 void Ws2812UpdateHand(int position, uint32_t index)
 {
-  uint32_t width = Settings.light_width;
-  if (index < WS_MARKER) { width = Settings.ws_width[index]; }
+  uint32_t width = Settings->light_width;
+  if (index < WS_MARKER) { width = Settings->ws_width[index]; }
   if (!width) { return; }  // Skip
 
-  position = (position + Settings.light_rotation) % Settings.light_pixels;
+  position = (position + Settings->light_rotation) % Settings->light_pixels;
 
-  if (Settings.flag.ws_clock_reverse) {  // SetOption16 - Switch between clockwise or counter-clockwise
-    position = Settings.light_pixels -position;
+  if (Settings->flag.ws_clock_reverse) {  // SetOption16 - Switch between clockwise or counter-clockwise
+    position = Settings->light_pixels -position;
   }
-  WsColor hand_color = { Settings.ws_color[index][WS_RED], Settings.ws_color[index][WS_GREEN], Settings.ws_color[index][WS_BLUE] };
+  WsColor hand_color = { Settings->ws_color[index][WS_RED], Settings->ws_color[index][WS_GREEN], Settings->ws_color[index][WS_BLUE] };
 
   Ws2812UpdatePixelColor(position, hand_color, 1);
 
@@ -275,12 +277,12 @@ void Ws2812UpdateHand(int position, uint32_t index)
 void Ws2812Clock(void)
 {
   strip->ClearTo(0); // Reset strip
-  int clksize = 60000 / (int)Settings.light_pixels;
+  int clksize = 60000 / (int)Settings->light_pixels;
 
   Ws2812UpdateHand((RtcTime.second * 1000) / clksize, WS_SECOND);
   Ws2812UpdateHand((RtcTime.minute * 1000) / clksize, WS_MINUTE);
   Ws2812UpdateHand((((RtcTime.hour % 12) * 5000) + ((RtcTime.minute * 1000) / 12 )) / clksize, WS_HOUR);
-  if (Settings.ws_color[WS_MARKER][WS_RED] + Settings.ws_color[WS_MARKER][WS_GREEN] + Settings.ws_color[WS_MARKER][WS_BLUE]) {
+  if (Settings->ws_color[WS_MARKER][WS_RED] + Settings->ws_color[WS_MARKER][WS_GREEN] + Settings->ws_color[WS_MARKER][WS_BLUE]) {
     for (uint32_t i = 0; i < 12; i++) {
       Ws2812UpdateHand((i * 5000) / clksize, WS_MARKER);
     }
@@ -305,7 +307,7 @@ void Ws2812GradientColor(uint32_t schemenr, struct WsColor* mColor, uint32_t ran
     start = (scheme.count -1) - start;
     end = (scheme.count -1) - end;
   }
-  float dimmer = 100 / (float)Settings.light_dimmer;
+  float dimmer = 100 / (float)Settings->light_dimmer;
   float fmyRed = (float)wsmap(rangeIndex % gradRange, 0, gradRange, scheme.colors[start].red, scheme.colors[end].red) / dimmer;
   float fmyGrn = (float)wsmap(rangeIndex % gradRange, 0, gradRange, scheme.colors[start].green, scheme.colors[end].green) / dimmer;
   float fmyBlu = (float)wsmap(rangeIndex % gradRange, 0, gradRange, scheme.colors[start].blue, scheme.colors[end].blue) / dimmer;
@@ -331,18 +333,18 @@ void Ws2812Gradient(uint32_t schemenr)
   ColorScheme scheme = kSchemes[schemenr];
   if (scheme.count < 2) { return; }
 
-  uint32_t repeat = kWsRepeat[Settings.light_width];  // number of scheme.count per ledcount
-  uint32_t range = (uint32_t)ceil((float)Settings.light_pixels / (float)repeat);
+  uint32_t repeat = kWsRepeat[Settings->light_width];  // number of scheme.count per ledcount
+  uint32_t range = (uint32_t)ceil((float)Settings->light_pixels / (float)repeat);
   uint32_t gradRange = (uint32_t)ceil((float)range / (float)(scheme.count - 1));
-  uint32_t speed = ((Settings.light_speed * 2) -1) * (STATES / 10);
+  uint32_t speed = ((Settings->light_speed * 2) -1) * (STATES / 10);
   uint32_t offset = speed > 0 ? Light.strip_timer_counter / speed : 0;
 
   WsColor oldColor, currentColor;
   Ws2812GradientColor(schemenr, &oldColor, range, gradRange, offset);
   currentColor = oldColor;
   speed = speed ? speed : 1;    // should never happen, just avoid div0
-  for (uint32_t i = 0; i < Settings.light_pixels; i++) {
-    if (kWsRepeat[Settings.light_width] > 1) {
+  for (uint32_t i = 0; i < Settings->light_pixels; i++) {
+    if (kWsRepeat[Settings->light_width] > 1) {
       Ws2812GradientColor(schemenr, &currentColor, range, gradRange, i + offset + 1);
     }
     // Blend old and current color based on time for smooth movement.
@@ -371,15 +373,15 @@ void Ws2812Bars(uint32_t schemenr)
 
   ColorScheme scheme = kSchemes[schemenr];
 
-  uint32_t maxSize = Settings.light_pixels / scheme.count;
-  if (kWidth[Settings.light_width] > maxSize) { maxSize = 0; }
+  uint32_t maxSize = Settings->light_pixels / scheme.count;
+  if (kWidth[Settings->light_width] > maxSize) { maxSize = 0; }
 
-  uint32_t speed = ((Settings.light_speed * 2) -1) * (STATES / 10);
+  uint32_t speed = ((Settings->light_speed * 2) -1) * (STATES / 10);
   uint32_t offset = (speed > 0) ? Light.strip_timer_counter / speed : 0;
 
   WsColor mcolor[scheme.count];
   memcpy(mcolor, scheme.colors, sizeof(mcolor));
-  float dimmer = 100 / (float)Settings.light_dimmer;
+  float dimmer = 100 / (float)Settings->light_dimmer;
   for (uint32_t i = 0; i < scheme.count; i++) {
     float fmyRed = (float)mcolor[i].red / dimmer;
     float fmyGrn = (float)mcolor[i].green / dimmer;
@@ -389,12 +391,103 @@ void Ws2812Bars(uint32_t schemenr)
     mcolor[i].blue = (uint8_t)fmyBlu;
   }
   uint32_t colorIndex = offset % scheme.count;
-  for (uint32_t i = 0; i < Settings.light_pixels; i++) {
-    if (maxSize) { colorIndex = ((i + offset) % (scheme.count * kWidth[Settings.light_width])) / kWidth[Settings.light_width]; }
+  for (uint32_t i = 0; i < Settings->light_pixels; i++) {
+    if (maxSize) { colorIndex = ((i + offset) % (scheme.count * kWidth[Settings->light_width])) / kWidth[Settings->light_width]; }
     c.R = mcolor[colorIndex].red;
     c.G = mcolor[colorIndex].green;
     c.B = mcolor[colorIndex].blue;
     strip->SetPixelColor(i, c);
+  }
+  Ws2812StripShow();
+}
+
+void Ws2812Steps(uint32_t schemenr) {
+#if (USE_WS2812_CTYPE > NEO_3LED)
+  RgbwColor c;
+  c.W = 0;
+#else
+  RgbColor c;
+#endif
+
+  ColorScheme scheme = kSchemes[schemenr];
+	// apply main color if current sheme == kStairs
+	if (scheme.colors == kStairs) {
+		scheme.colors[1].red = Settings->light_color[0];
+		scheme.colors[1].green = Settings->light_color[1];
+		scheme.colors[1].blue = Settings->light_color[2];
+	}
+
+	uint8_t scheme_count = scheme.count;
+	if (Settings->light_fade) {
+		scheme_count = Settings->ws_width[WS_HOUR];  // Width4
+	}
+  if (scheme_count < 2) {
+    scheme_count = 2;
+  }
+
+  WsColor mcolor[scheme_count];
+
+	uint8_t color_start = 0;
+	uint8_t color_end = 1;
+	if (Settings->light_rotation & 0x01) {
+		color_start = 1;
+		color_end = 0;
+	}
+
+	if (Settings->light_fade) {
+		// generate gradient (width = Width4)
+		for (uint32_t i = 1; i < scheme_count - 1; i++) {
+			mcolor[i].red = (uint8_t) wsmap(i, 0, scheme_count, scheme.colors[color_start].red, scheme.colors[color_end].red);
+			mcolor[i].green = (uint8_t) wsmap(i, 0, scheme_count, scheme.colors[color_start].green, scheme.colors[color_end].green);
+			mcolor[i].blue = (uint8_t) wsmap(i, 0, scheme_count, scheme.colors[color_start].blue, scheme.colors[color_end].blue);
+		}
+	} else {
+		memcpy(mcolor, scheme.colors, sizeof(mcolor));
+	}
+	// Repair first & last color in gradient; apply scheme rotation if fade==0
+	mcolor[0].red = scheme.colors[color_start].red;
+	mcolor[0].green = scheme.colors[color_start].green;
+	mcolor[0].blue = scheme.colors[color_start].blue;
+	mcolor[scheme_count-1].red = scheme.colors[color_end].red;
+	mcolor[scheme_count-1].green = scheme.colors[color_end].green;
+	mcolor[scheme_count-1].blue = scheme.colors[color_end].blue;
+
+	// Adjust to dimmer value
+  float dimmer = 100 / (float)Settings->light_dimmer;
+  for (uint32_t i = 0; i < scheme_count; i++) {
+    float fmyRed = (float)mcolor[i].red / dimmer;
+    float fmyGrn = (float)mcolor[i].green / dimmer;
+    float fmyBlu = (float)mcolor[i].blue / dimmer;
+    mcolor[i].red = (uint8_t)fmyRed;
+    mcolor[i].green = (uint8_t)fmyGrn;
+    mcolor[i].blue = (uint8_t)fmyBlu;
+  }
+
+  uint32_t speed = Settings->light_speed;
+	int32_t current_position = Light.strip_timer_counter / speed;
+
+	//all pixels are shown already | rotation change will not change current state
+	if (current_position >  Settings->light_pixels / Settings->light_step_pixels + scheme_count ) {
+		return;
+	}
+
+  int32_t colorIndex;
+  int32_t step_nr;
+
+  for (uint32_t i = 0; i < Settings->light_pixels; i++) {
+		step_nr = i / Settings->light_step_pixels;
+		colorIndex = current_position - step_nr;
+	  if (colorIndex < 0) { colorIndex = 0; }
+		if (colorIndex > scheme_count - 1) { colorIndex = scheme_count - 1; }
+    c.R = mcolor[colorIndex].red;
+    c.G = mcolor[colorIndex].green;
+    c.B = mcolor[colorIndex].blue;
+		// Adjust the scheme rotation
+		if (Settings->light_rotation & 0x02) {
+			strip->SetPixelColor(Settings->light_pixels - i - 1, c);
+		} else {
+			strip->SetPixelColor(i, c);
+		}
   }
   Ws2812StripShow();
 }
@@ -422,7 +515,7 @@ void Ws2812SetColor(uint32_t led, uint8_t red, uint8_t green, uint8_t blue, uint
     strip->SetPixelColor(led -1, lcolor);  // Led 1 is strip Led 0 -> substract offset 1
   } else {
 //    strip->ClearTo(lcolor);  // Set WS2812_MAX_LEDS pixels
-    for (uint32_t i = 0; i < Settings.light_pixels; i++) {
+    for (uint32_t i = 0; i < Settings->light_pixels; i++) {
       strip->SetPixelColor(i, lcolor);
     }
   }
@@ -448,7 +541,7 @@ char* Ws2812GetColor(uint32_t led, char* scolor)
   sl_ledcolor[2] = lcolor.B;
   scolor[0] = '\0';
   for (uint32_t i = 0; i < Light.subtype; i++) {
-    if (Settings.flag.decimal_text) {  // SetOption17 - Switch between decimal or hexadecimal output (0 = hexadecimal, 1 = decimal)
+    if (Settings->flag.decimal_text) {  // SetOption17 - Switch between decimal or hexadecimal output (0 = hexadecimal, 1 = decimal)
       snprintf_P(scolor, 25, PSTR("%s%s%d"), scolor, (i > 0) ? "," : "", sl_ledcolor[i]);
     } else {
       snprintf_P(scolor, 25, PSTR("%s%02X"), scolor, sl_ledcolor[i]);
@@ -486,7 +579,7 @@ bool Ws2812SetChannels(void)
 
 void Ws2812ShowScheme(void)
 {
-  uint32_t scheme = Settings.light_scheme - Ws2812.scheme_offset;
+  uint32_t scheme = Settings->light_scheme - Ws2812.scheme_offset;
 
   switch (scheme) {
     case 0:  // Clock
@@ -496,10 +589,14 @@ void Ws2812ShowScheme(void)
       }
       break;
     default:
-      if (1 == Settings.light_fade) {
-        Ws2812Gradient(scheme -1);
-      } else {
-        Ws2812Bars(scheme -1);
+			if(Settings->light_step_pixels > 0){
+				Ws2812Steps(scheme -1);
+			} else {
+				if (1 == Settings->light_fade) {
+					Ws2812Gradient(scheme -1);
+				} else {
+					Ws2812Bars(scheme -1);
+				}
       }
       Ws2812.show_next = 1;
       break;
@@ -536,7 +633,7 @@ void Ws2812ModuleSelected(void)
 
 void CmndLed(void)
 {
-  if ((XdrvMailbox.index > 0) && (XdrvMailbox.index <= Settings.light_pixels)) {
+  if ((XdrvMailbox.index > 0) && (XdrvMailbox.index <= Settings->light_pixels)) {
     if (XdrvMailbox.data_len > 0) {
       char *p;
       uint16_t idx = XdrvMailbox.index;
@@ -545,7 +642,7 @@ void CmndLed(void)
         if (LightColorEntry(color, strlen(color))) {
           Ws2812SetColor(idx, Light.entry_color[0], Light.entry_color[1], Light.entry_color[2], Light.entry_color[3]);
           idx++;
-          if (idx > Settings.light_pixels) { break; }
+          if (idx > Settings->light_pixels) { break; }
         } else {
           break;
         }
@@ -560,20 +657,31 @@ void CmndLed(void)
 void CmndPixels(void)
 {
   if ((XdrvMailbox.payload > 0) && (XdrvMailbox.payload <= WS2812_MAX_LEDS)) {
-    Settings.light_pixels = XdrvMailbox.payload;
-    Settings.light_rotation = 0;
+    Settings->light_pixels = XdrvMailbox.payload;
+    Settings->light_rotation = 0;
     Ws2812Clear();
     Light.update = true;
   }
-  ResponseCmndNumber(Settings.light_pixels);
+  ResponseCmndNumber(Settings->light_pixels);
 }
+
+void CmndStepPixels(void)
+{
+  if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 255)) {
+    Settings->light_step_pixels = (XdrvMailbox.payload > WS2812_MAX_LEDS) ? WS2812_MAX_LEDS :  XdrvMailbox.payload;
+    Ws2812Clear();
+    Light.update = true;
+  }
+  ResponseCmndNumber(Settings->light_step_pixels);
+}
+
 
 void CmndRotation(void)
 {
-  if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload < Settings.light_pixels)) {
-    Settings.light_rotation = XdrvMailbox.payload;
+  if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload < Settings->light_pixels)) {
+    Settings->light_rotation = XdrvMailbox.payload;
   }
-  ResponseCmndNumber(Settings.light_rotation);
+  ResponseCmndNumber(Settings->light_rotation);
 }
 
 void CmndWidth(void)
@@ -581,14 +689,14 @@ void CmndWidth(void)
   if ((XdrvMailbox.index > 0) && (XdrvMailbox.index <= 4)) {
     if (1 == XdrvMailbox.index) {
       if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload <= 4)) {
-        Settings.light_width = XdrvMailbox.payload;
+        Settings->light_width = XdrvMailbox.payload;
       }
-      ResponseCmndNumber(Settings.light_width);
+      ResponseCmndNumber(Settings->light_width);
     } else {
       if ((XdrvMailbox.payload >= 0) && (XdrvMailbox.payload < 32)) {
-        Settings.ws_width[XdrvMailbox.index -2] = XdrvMailbox.payload;
+        Settings->ws_width[XdrvMailbox.index -2] = XdrvMailbox.payload;
       }
-      ResponseCmndIdxNumber(Settings.ws_width[XdrvMailbox.index -2]);
+      ResponseCmndIdxNumber(Settings->ws_width[XdrvMailbox.index -2]);
     }
   }
 }

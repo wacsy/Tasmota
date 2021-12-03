@@ -69,8 +69,8 @@
 #ifdef USE_M5STACK_CORE2
 #undef AUDIO_PWR_ON
 #undef AUDIO_PWR_OFF
-#define AUDIO_PWR_ON CORE2_audio_power(true);
-#define AUDIO_PWR_OFF CORE2_audio_power(false);
+#define AUDIO_PWR_ON Core2AudioPower(true);
+#define AUDIO_PWR_OFF Core2AudioPower(false);
 #undef DAC_IIS_BCK
 #undef DAC_IIS_WS
 #undef DAC_IIS_DOUT
@@ -280,12 +280,12 @@ void I2S_Init(void) {
   mp3ram = nullptr;
 
 #ifdef ESP32
-  if (psramFound()) {
+  if (UsePSRAM()) {
     mp3ram = heap_caps_malloc(preallocateCodecSize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   }
 
 #ifdef USE_I2S_WEBRADIO
-  if (psramFound()) {
+  if (UsePSRAM()) {
     preallocateBuffer = heap_caps_malloc(preallocateBufferSize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     preallocateCodec = heap_caps_malloc(preallocateCodecSize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   } else {

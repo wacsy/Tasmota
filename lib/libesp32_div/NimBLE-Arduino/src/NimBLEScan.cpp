@@ -11,11 +11,9 @@
  *  Created on: Jul 1, 2017
  *      Author: kolban
  */
-#include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
 #include "NimBLEScan.h"
 #include "NimBLEDevice.h"
@@ -110,7 +108,7 @@ NimBLEScan::~NimBLEScan() {
 
             advertisedDevice->m_timestamp = time(nullptr);
             advertisedDevice->setRSSI(event->disc.rssi);
-            advertisedDevice->setPayload(event->disc.data, event->disc.length_data, 
+            advertisedDevice->setPayload(event->disc.data, event->disc.length_data,
             event->disc.event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP);
 
             if (pScan->m_pAdvertisedDeviceCallbacks) {
@@ -128,7 +126,7 @@ NimBLEScan::~NimBLEScan() {
                     advertisedDevice->m_callbackSent = true;
                     pScan->m_pAdvertisedDeviceCallbacks->onResult(advertisedDevice);
                 }
-                // If not storing results and we have invoked the callback, delete the device. 
+                // If not storing results and we have invoked the callback, delete the device.
                 if(pScan->m_maxResults == 0 && advertisedDevice->m_callbackSent) {
                     pScan->erase(advertisedAddress);
                 }
@@ -316,6 +314,8 @@ bool NimBLEScan::start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResul
             break;
 
         case BLE_HS_EALREADY:
+            // Clear the cache if already scanning in case an advertiser was missed.
+            clearDuplicateCache();
             break;
 
         case BLE_HS_EBUSY:
@@ -399,6 +399,16 @@ bool NimBLEScan::stop() {
 
 
 /**
+ * @brief Clears the duplicate scan filter cache.
+ */
+void NimBLEScan::clearDuplicateCache() {
+#ifdef CONFIG_IDF_TARGET_ESP32 // Not available for ESP32C3
+    esp_ble_scan_dupilcate_list_flush();
+#endif
+}
+
+
+/**
  * @brief Delete peer device from the scan results vector.
  * @param [in] address The address of the device to delete from the results.
  * @details After disconnecting, it may be required in the case we were connected to a device without a public address.
@@ -453,6 +463,7 @@ void NimBLEScan::clearResults() {
         delete it;
     }
     m_scanResults.m_advertisedDevicesVector.clear();
+    clearDuplicateCache();
 }
 
 
@@ -521,5 +532,4 @@ NimBLEAdvertisedDevice *NimBLEScanResults::getDevice(const NimBLEAddress &addres
     return nullptr;
 }
 
-#endif // #if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
-#endif /* CONFIG_BT_ENABLED */
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_OBSERVER */

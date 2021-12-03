@@ -9,11 +9,9 @@
  *  Created on: Jun 22, 2017
  *      Author: kolban
  */
-#include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
 
 #include "NimBLECharacteristic.h"
 #include "NimBLE2904.h"
@@ -45,15 +43,14 @@ NimBLECharacteristic::NimBLECharacteristic(const char* uuid, uint16_t properties
  * @param [in] pService - pointer to the service instance this characteristic belongs to.
  */
 NimBLECharacteristic::NimBLECharacteristic(const NimBLEUUID &uuid, uint16_t properties, NimBLEService* pService) {
-    m_uuid       = uuid;
-    m_handle     = NULL_HANDLE;
-    m_properties = properties;
-    m_pCallbacks = &defaultCallback;
-    m_pService   = pService;
-    m_value      = "";
-    m_valMux     = portMUX_INITIALIZER_UNLOCKED;
-    m_pTaskData  = nullptr;
-    m_timestamp  = 0;
+    m_uuid        = uuid;
+    m_handle      = NULL_HANDLE;
+    m_properties  = properties;
+    m_pCallbacks  = &defaultCallback;
+    m_pService    = pService;
+    m_value       = "";
+    m_timestamp   = 0;
+    m_removed     = 0;
 } // NimBLECharacteristic
 
 /**
@@ -95,9 +92,62 @@ NimBLEDescriptor* NimBLECharacteristic::createDescriptor(const NimBLEUUID &uuid,
         pDescriptor = new NimBLEDescriptor(uuid, properties, max_len, this);
     }
 
-    m_dscVec.push_back(pDescriptor);
+    addDescriptor(pDescriptor);
     return pDescriptor;
-} // createCharacteristic
+} // createDescriptor
+
+
+/**
+ * @brief Add a descriptor to the characteristic.
+ * @param [in] pDescriptor A pointer to the descriptor to add.
+ */
+void NimBLECharacteristic::addDescriptor(NimBLEDescriptor *pDescriptor) {
+    bool foundRemoved = false;
+
+    if(pDescriptor->m_removed > 0) {
+        for(auto& it : m_dscVec) {
+            if(it == pDescriptor) {
+                foundRemoved = true;
+                pDescriptor->m_removed = 0;
+            }
+        }
+    }
+
+    if(!foundRemoved) {
+        m_dscVec.push_back(pDescriptor);
+    }
+
+    pDescriptor->setCharacteristic(this);
+    NimBLEDevice::getServer()->serviceChanged();
+}
+
+
+/**
+ * @brief Remove a descriptor from the characterisitc.
+ * @param[in] pDescriptor A pointer to the descriptor instance to remove from the characterisitc.
+ * @param[in] deleteDsc If true it will delete the descriptor instance and free it's resources.
+ */
+void NimBLECharacteristic::removeDescriptor(NimBLEDescriptor *pDescriptor, bool deleteDsc) {
+    // Check if the descriptor was already removed and if so, check if this
+    // is being called to delete the object and do so if requested.
+    // Otherwise, ignore the call and return.
+    if(pDescriptor->m_removed > 0) {
+        if(deleteDsc) {
+            for(auto it = m_dscVec.begin(); it != m_dscVec.end(); ++it) {
+                if ((*it) == pDescriptor) {
+                    delete *it;
+                    m_dscVec.erase(it);
+                    break;
+                }
+            }
+        }
+
+        return;
+    }
+
+    pDescriptor->m_removed = deleteDsc ? NIMBLE_ATT_REMOVE_DELETE : NIMBLE_ATT_REMOVE_HIDE;
+    NimBLEDevice::getServer()->serviceChanged();
+} // removeDescriptor
 
 
 /**
@@ -165,6 +215,11 @@ NimBLEService* NimBLECharacteristic::getService() {
 } // getService
 
 
+void NimBLECharacteristic::setService(NimBLEService *pService) {
+    m_pService = pService;
+}
+
+
 /**
  * @brief Get the UUID of the characteristic.
  * @return The UUID of the characteristic.
@@ -179,12 +234,12 @@ NimBLEUUID NimBLECharacteristic::getUUID() {
  * @return A std::string containing the current characteristic value.
  */
 std::string NimBLECharacteristic::getValue(time_t *timestamp) {
-    portENTER_CRITICAL(&m_valMux);
+    ble_npl_hw_enter_critical();
     std::string retVal = m_value;
     if(timestamp != nullptr) {
         *timestamp = m_timestamp;
     }
-    portEXIT_CRITICAL(&m_valMux);
+    ble_npl_hw_exit_critical(0);
 
     return retVal;
 } // getValue
@@ -195,10 +250,9 @@ std::string NimBLECharacteristic::getValue(time_t *timestamp) {
  * @return The length of the current characteristic data.
  */
 size_t NimBLECharacteristic::getDataLength() {
-    portENTER_CRITICAL(&m_valMux);
+    ble_npl_hw_enter_critical();
     size_t len = m_value.length();
-    portEXIT_CRITICAL(&m_valMux);
-
+    ble_npl_hw_exit_critical(0);
     return len;
 }
 
@@ -231,11 +285,10 @@ int NimBLECharacteristic::handleGapEvent(uint16_t conn_handle, uint16_t attr_han
                     pCharacteristic->m_pCallbacks->onRead(pCharacteristic, &desc);
                 }
 
-                portENTER_CRITICAL(&pCharacteristic->m_valMux);
+                ble_npl_hw_enter_critical();
                 rc = os_mbuf_append(ctxt->om, (uint8_t*)pCharacteristic->m_value.data(),
                                     pCharacteristic->m_value.length());
-                portEXIT_CRITICAL(&pCharacteristic->m_valMux);
-
+                ble_npl_hw_exit_critical(0);
                 return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
             }
 
@@ -301,16 +354,13 @@ void NimBLECharacteristic::setSubscribe(struct ble_gap_event *event) {
         subVal |= NIMBLE_SUB_INDICATE;
     }
 
-    if(m_pTaskData != nullptr) {
-        m_pTaskData->rc = (subVal & NIMBLE_SUB_INDICATE) ? 0 :
-                          NimBLECharacteristicCallbacks::Status::ERROR_INDICATE_DISABLED;
-        xTaskNotifyGive(m_pTaskData->task);
-    }
-    
     NIMBLE_LOGI(LOG_TAG, "New subscribe value for conn: %d val: %d",
-                         event->subscribe.conn_handle, subVal);
+                          event->subscribe.conn_handle, subVal);
 
-    m_pCallbacks->onSubscribe(this, &desc, subVal);
+    if(!event->subscribe.cur_indicate && event->subscribe.prev_indicate) {
+       NimBLEDevice::getServer()->clearIndicateWait(event->subscribe.conn_handle);
+    }
+
 
     auto it = m_subscribedVec.begin();
     for(;it != m_subscribedVec.end(); ++it) {
@@ -322,16 +372,14 @@ void NimBLECharacteristic::setSubscribe(struct ble_gap_event *event) {
     if(subVal > 0) {
         if(it == m_subscribedVec.end()) {
             m_subscribedVec.push_back({event->subscribe.conn_handle, subVal});
-            return;
+        } else {
+            (*it).second = subVal;
         }
-
-        (*it).second = subVal;
-
     } else if(it != m_subscribedVec.end()) {
         m_subscribedVec.erase(it);
-        m_subscribedVec.shrink_to_fit();
     }
-    
+
+    m_pCallbacks->onSubscribe(this, &desc, subVal);
 }
 
 
@@ -379,7 +427,7 @@ void NimBLECharacteristic::notify(bool is_notification) {
     int rc = 0;
 
     for (auto &it : m_subscribedVec) {
-        uint16_t _mtu = getService()->getServer()->getPeerMTU(it.first);
+        uint16_t _mtu = getService()->getServer()->getPeerMTU(it.first) - 3;
 
         // check if connected and subscribed
         if(_mtu == 0 || it.second == 0) {
@@ -395,8 +443,8 @@ void NimBLECharacteristic::notify(bool is_notification) {
             }
         }
 
-        if (length > _mtu - 3) {
-            NIMBLE_LOGW(LOG_TAG, "- Truncating to %d bytes (maximum notify size)", _mtu - 3);
+        if (length > _mtu) {
+            NIMBLE_LOGW(LOG_TAG, "- Truncating to %d bytes (maximum notify size)", _mtu);
         }
 
         if(is_notification && (!(it.second & NIMBLE_SUB_NOTIFY))) {
@@ -416,40 +464,20 @@ void NimBLECharacteristic::notify(bool is_notification) {
         // We also must create it in each loop iteration because it is consumed with each host call.
         os_mbuf *om = ble_hs_mbuf_from_flat((uint8_t*)value.data(), length);
 
-        NimBLECharacteristicCallbacks::Status statusRC;
-
         if(!is_notification && (m_properties & NIMBLE_PROPERTY::INDICATE)) {
-            ble_task_data_t taskData = {nullptr, xTaskGetCurrentTaskHandle(),0, nullptr};
-            m_pTaskData = &taskData;
+            if(!NimBLEDevice::getServer()->setIndicateWait(it.first)) {
+               NIMBLE_LOGE(LOG_TAG, "prior Indication in progress");
+               os_mbuf_free_chain(om);
+               return;
+            }
 
             rc = ble_gattc_indicate_custom(it.first, m_handle, om);
             if(rc != 0){
-                statusRC = NimBLECharacteristicCallbacks::Status::ERROR_GATT;
-            } else {
-                ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-                rc = m_pTaskData->rc;
-            }
-
-            m_pTaskData = nullptr;
-
-            if(rc == BLE_HS_EDONE) {
-                rc = 0;
-                statusRC = NimBLECharacteristicCallbacks::Status::SUCCESS_INDICATE;
-            } else if(rc == BLE_HS_ETIMEOUT) {
-                statusRC = NimBLECharacteristicCallbacks::Status::ERROR_INDICATE_TIMEOUT;
-            } else {
-                statusRC = NimBLECharacteristicCallbacks::Status::ERROR_INDICATE_FAILURE;
+                NimBLEDevice::getServer()->clearIndicateWait(it.first);
             }
         } else {
-            rc = ble_gattc_notify_custom(it.first, m_handle, om);
-            if(rc == 0) {
-                statusRC = NimBLECharacteristicCallbacks::Status::SUCCESS_NOTIFY;
-            } else {
-                statusRC = NimBLECharacteristicCallbacks::Status::ERROR_GATT;
-            }
+            ble_gattc_notify_custom(it.first, m_handle, om);
         }
-
-        m_pCallbacks->onStatus(this, statusRC, rc);
     }
 
     NIMBLE_LOGD(LOG_TAG, "<< notify");
@@ -468,6 +496,13 @@ void NimBLECharacteristic::setCallbacks(NimBLECharacteristicCallbacks* pCallback
         m_pCallbacks = &defaultCallback;
     }
 } // setCallbacks
+
+/**
+ * @brief Get the callback handlers for this characteristic.
+ */
+NimBLECharacteristicCallbacks* NimBLECharacteristic::getCallbacks() {
+    return m_pCallbacks;
+} //getCallbacks
 
 
 /**
@@ -488,10 +523,10 @@ void NimBLECharacteristic::setValue(const uint8_t* data, size_t length) {
     }
 
     time_t t = time(nullptr);
-    portENTER_CRITICAL(&m_valMux);
+    ble_npl_hw_enter_critical();
     m_value = std::string((char*)data, length);
     m_timestamp = t;
-    portEXIT_CRITICAL(&m_valMux);
+    ble_npl_hw_exit_critical(0);
 
     NIMBLE_LOGD(LOG_TAG, "<< setValue");
 } // setValue
@@ -601,6 +636,4 @@ void NimBLECharacteristicCallbacks::onSubscribe(NimBLECharacteristic* pCharacter
     NIMBLE_LOGD("NimBLECharacteristicCallbacks", "onSubscribe: default");
 }
 
-
-#endif // #if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-#endif /* CONFIG_BT_ENABLED */
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_PERIPHERAL */
