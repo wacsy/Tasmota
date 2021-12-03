@@ -51,6 +51,7 @@
 #define D_DECIMAL_SEPARATOR "."
 
 // Common
+#define D_LOC_TIME "local time"
 #define D_ADMIN "Admin"
 #define D_AIR_QUALITY "Air quality"
 #define D_AP "AP"                    // Access Point

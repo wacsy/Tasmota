@@ -180,6 +180,7 @@
 #define D_UPGRADE "opgradeer"
 #define D_UPLOAD "Laai op"
 #define D_UPTIME "Uptyd"
+#define D_LOC_TIME "local time"
 #define D_USER "Gebruiker"
 #define D_UTC_TIME "UTC"
 #define D_UV_INDEX "UV Indeks"
