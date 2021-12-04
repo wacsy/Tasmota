@@ -1178,7 +1178,9 @@ void SettingsDefaultSet2(void) {
   SettingsDefaultWebColor();
 
   memset(&Settings->sensors, 0xFF, 32);  // Enable all possible sensors
-  SettingsEnableAllI2cDrivers();
+  #ifdef USE_I2C
+    SettingsEnableAllI2cDrivers();
+  #endif
 
   // Tuya
   flag3.tuya_apply_o20 |= TUYA_SETOPTION_20;
@@ -1268,12 +1270,13 @@ void SettingsDefaultWebColor(void) {
   }
 }
 
-void SettingsEnableAllI2cDrivers(void) {
-  Settings->i2c_drivers[0] = I2CDRIVERS_0_31;
-  Settings->i2c_drivers[1] = I2CDRIVERS_32_63;
-  Settings->i2c_drivers[2] = I2CDRIVERS_64_95;
-}
-
+#ifdef USE_I2C
+  void SettingsEnableAllI2cDrivers(void) {
+    Settings->i2c_drivers[0] = I2CDRIVERS_0_31;
+    Settings->i2c_drivers[1] = I2CDRIVERS_32_63;
+    Settings->i2c_drivers[2] = I2CDRIVERS_64_95;
+  }
+#endif
 /********************************************************************************************/
 
 void SettingsDelta(void) {

@@ -145,8 +145,8 @@ i.e. the Bluetooth of the ESP can be shared without conflict.
 #include <string.h>
 #include <cstdarg>
 
-#include <NimBLEDevice.h>
-#include <NimBLEAdvertisedDevice.h>
+#include "NimBLEDevice.h"
+#include "NimBLEAdvertisedDevice.h"
 #include "NimBLEEddystoneURL.h"
 #include "NimBLEEddystoneTLM.h"
 #include "NimBLEBeacon.h"
