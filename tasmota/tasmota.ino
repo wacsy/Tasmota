@@ -344,6 +344,7 @@ struct TasmotaGlobal_t {
   uint8_t last_source;                      // Last command source
   uint8_t last_command_source;              // Last command source
   uint8_t shutters_present;                 // Number of actual define shutters
+  //  uint8_t prepped_loglevel;  
   uint8_t discovery_counter;                // Delayed discovery counter
   uint8_t power_on_delay;                   // Delay relay power on to reduce power surge (SetOption47)
 #ifdef USE_PWM_DIMMER
@@ -439,15 +440,15 @@ void setup(void) {
   if (!RtcRebootValid()) {
     RtcReboot.fast_reboot_count = 0;
   }
-#ifdef FIRMWARE_MINIMAL
-  RtcReboot.fast_reboot_count = 0;    // Disable fast reboot and quick power cycle detection
-#else
-  if (ResetReason() == REASON_DEEP_SLEEP_AWAKE) {
-    RtcReboot.fast_reboot_count = 0;  // Disable fast reboot and quick power cycle detection
-  } else {
-    RtcReboot.fast_reboot_count++;
-  }
-#endif
+  #ifdef FIRMWARE_MINIMAL
+    RtcReboot.fast_reboot_count = 0;    // Disable fast reboot and quick power cycle detection
+  #else
+    if (ResetReason() == REASON_DEEP_SLEEP_AWAKE) {
+      RtcReboot.fast_reboot_count = 0;  // Disable fast reboot and quick power cycle detection
+    } else {
+      RtcReboot.fast_reboot_count++;
+    }
+  #endif
   RtcRebootSave();
 
   if (RtcSettingsLoad(0)) {
@@ -513,9 +514,9 @@ void setup(void) {
   AddLog(LOG_LEVEL_INFO, PSTR("HDW: %s"), GetDeviceHardware().c_str());
 #endif // ESP32
 
-#ifdef USE_UFILESYS
-  UfsInit();  // xdrv_50_filesystem.ino
-#endif
+  #ifdef USE_UFILESYS
+    UfsInit();  // xdrv_50_filesystem.ino
+  #endif
 
   SettingsLoad();
   SettingsDelta();
@@ -640,9 +641,9 @@ void setup(void) {
 
   AddLog(LOG_LEVEL_INFO, PSTR(D_PROJECT " %s - %s " D_VERSION " %s%s-" ARDUINO_CORE_RELEASE "(%s)"),
     PSTR(PROJECT), SettingsText(SET_DEVICENAME), TasmotaGlobal.version, TasmotaGlobal.image_name, GetBuildDateAndTime().c_str());
-#ifdef FIRMWARE_MINIMAL
-  AddLog(LOG_LEVEL_INFO, PSTR(D_WARNING_MINIMAL_VERSION));
-#endif  // FIRMWARE_MINIMAL
+  #ifdef FIRMWARE_MINIMAL
+    AddLog(LOG_LEVEL_INFO, PSTR(D_WARNING_MINIMAL_VERSION));
+  #endif  // FIRMWARE_MINIMAL
 
 #ifdef ESP8266
 #ifdef USE_ARDUINO_OTA
@@ -666,14 +667,14 @@ void BacklogLoop(void) {
       bool nodelay_detected = false;
       String cmd;
       do {
-#ifdef SUPPORT_IF_STATEMENT
-        cmd = backlog.shift();
-#else
-        cmd = TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer];
-        TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer] = (const char*) nullptr;  // Force deallocation of the String internal memory
-        TasmotaGlobal.backlog_pointer++;
-        if (TasmotaGlobal.backlog_pointer >= MAX_BACKLOG) { TasmotaGlobal.backlog_pointer = 0; }
-#endif
+        #ifdef SUPPORT_IF_STATEMENT
+                cmd = backlog.shift();
+        #else
+                cmd = TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer];
+                TasmotaGlobal.backlog[TasmotaGlobal.backlog_pointer] = (const char*) nullptr;  // Force deallocation of the String internal memory
+                TasmotaGlobal.backlog_pointer++;
+                if (TasmotaGlobal.backlog_pointer >= MAX_BACKLOG) { TasmotaGlobal.backlog_pointer = 0; }
+        #endif
         nodelay_detected = !strncasecmp_P(cmd.c_str(), PSTR(D_CMND_NODELAY), strlen(D_CMND_NODELAY));
         if (nodelay_detected) { nodelay = true; }
       } while (!BACKLOG_EMPTY && nodelay_detected);
@@ -706,24 +707,24 @@ void SleepDelay(uint32_t mseconds) {
 void Scheduler(void) {
   XdrvXsnsCall(FUNC_LOOP);
 
-// check LEAmDNS.h
-// MDNS.update() needs to be called in main loop
-#ifdef ESP8266                     // Not needed with esp32 mdns
-#ifdef USE_DISCOVERY
-#ifdef USE_WEBSERVER
-#ifdef WEBSERVER_ADVERTISE
-  MdnsUpdate();
-#endif  // WEBSERVER_ADVERTISE
-#endif  // USE_WEBSERVER
-#endif  // USE_DISCOVERY
-#endif  // ESP8266
+  // check LEAmDNS.h
+  // MDNS.update() needs to be called in main loop
+  #ifdef ESP8266                     // Not needed with esp32 mdns
+  #ifdef USE_DISCOVERY
+  #ifdef USE_WEBSERVER
+  #ifdef WEBSERVER_ADVERTISE
+    MdnsUpdate();
+  #endif  // WEBSERVER_ADVERTISE
+  #endif  // USE_WEBSERVER
+  #endif  // USE_DISCOVERY
+  #endif  // ESP8266
 
   OsWatchLoop();
   ButtonLoop();
   SwitchLoop();
-#ifdef USE_DEVICE_GROUPS
-  DeviceGroupsLoop();
-#endif  // USE_DEVICE_GROUPS
+  #ifdef USE_DEVICE_GROUPS
+    DeviceGroupsLoop();
+  #endif  // USE_DEVICE_GROUPS
   BacklogLoop();
 
   static uint32_t state_50msecond = 0;             // State 50msecond timer
