@@ -6,6 +6,32 @@ All notable changes to this project will be documented in this file.
 ## [12.5.0] 20230417
 - Release Peyton
 
+## [12.5.0.1]
+### Added
+- Matter sensors Humidity, Pressure, Illuminance; optimize memory (#18441)
+- Command ``SetOption152 0/1`` to select two (0 = default) pin bistable or one (1) pin latching relay control (#18386)
+- Matter allow `Matter#Initialized` rule once the device is configured (#18451)
+- Matter UI to change endpoints configuration (#18498)
+- Matter support for Shutters (without Tilt) (#18509)
+
+### Breaking Changed
+
+### Changed
+- ESP32 Framework (Core) from v2.0.7 to v2.0.8
+- Refactored Zero Cross Dimmer (#18481)
+
+### Fixed
+- ESP8266 Energy Export Active no update regression from v12.3.1.3
+- NovaSDS GUI values (#18444)
+- Berry fix rules for string comparisons (#18464)
+
+### Removed
+
+## [Released]
+
+## [12.5.0] 20230417
+- Release Peyton
+
 ## [12.4.0.5] 20230417
 ### Added
 - Matter support for Light and Relays on ESP32 by Stephan Hadinger (#18320)
