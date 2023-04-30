@@ -593,7 +593,7 @@
 #undef USE_COUNTER                               // Disable counters
 #define USE_ADC_VCC                              // Display Vcc in Power status. Disable for use as Analog input on selected devices
 #undef USE_DS18x20                               // Disable DS18x20 sensor
-//#undef USE_I2C                                   // Enable I2C, zbbridge uses i2c EEprom
+#undef USE_I2C                                   // Enable I2C, zbbridge uses i2c EEprom
 #undef USE_SPI                                   // Disable all SPI devices
 #undef USE_DISPLAY                               // Disable Display support
 #undef USE_MHZ19                                 // Disable support for MH-Z19 CO2 sensor
