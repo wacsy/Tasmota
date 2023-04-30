@@ -828,6 +828,14 @@ void SettingsDefaultSet1(void) {
 const uint8_t default_fingerprint1[] PROGMEM = { MQTT_FINGERPRINT1 };
 const uint8_t default_fingerprint2[] PROGMEM = { MQTT_FINGERPRINT2 };
 
+#ifdef USE_I2C
+  void SettingsEnableAllI2cDrivers(void) {
+    Settings->i2c_drivers[0] = I2CDRIVERS_0_31;
+    Settings->i2c_drivers[1] = I2CDRIVERS_32_63;
+    Settings->i2c_drivers[2] = I2CDRIVERS_64_95;
+  }
+#endif
+
 void SettingsDefaultSet2(void) {
   memset((char*)Settings +16, 0x00, sizeof(TSettings) -16);
 
@@ -1234,7 +1242,9 @@ void SettingsDefaultSet2(void) {
   SettingsDefaultWebColor();
 
   memset(&Settings->sensors, 0xFF, 32);  // Enable all possible sensors
-  SettingsEnableAllI2cDrivers();
+  #ifdef USE_I2C
+    SettingsEnableAllI2cDrivers();
+  #endif
 
   // Tuya
   flag3.tuya_apply_o20 |= TUYA_SETOPTION_20;
@@ -1333,12 +1343,6 @@ void SettingsDefaultWebColor(void) {
   for (uint32_t i = 0; i < COL_LAST; i++) {
     WebHexCode(i, GetTextIndexed(scolor, sizeof(scolor), i, kWebColors));
   }
-}
-
-void SettingsEnableAllI2cDrivers(void) {
-  Settings->i2c_drivers[0] = I2CDRIVERS_0_31;
-  Settings->i2c_drivers[1] = I2CDRIVERS_32_63;
-  Settings->i2c_drivers[2] = I2CDRIVERS_64_95;
 }
 
 /********************************************************************************************/
