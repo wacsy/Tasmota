@@ -189,6 +189,7 @@
 #define D_UPGRADE "升級"
 #define D_UPLOAD "上傳"
 #define D_UPTIME "啟動時間"
+#define D_LOC_TIME "节点时间"
 #define D_USED "used"
 #define D_USER "使用者名稱"
 #define D_UTC_TIME "世界協調時間(UTC)"

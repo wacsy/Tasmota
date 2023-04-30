@@ -189,6 +189,7 @@
 #define D_UPGRADE "upgrade"
 #define D_UPLOAD "Upload"
 #define D_UPTIME "Uptime"
+#define D_LOC_TIME "local time"
 #define D_USED "used"
 #define D_USER "User"
 #define D_UTC_TIME "UTC"
