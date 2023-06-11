@@ -1,8 +1,10 @@
 Import("env")
 
+import os
 import shutil
 import pathlib
 import tasmotapiolib
+from os.path import join
 
 
 def bin_map_copy(source, target, env):
@@ -11,6 +13,7 @@ def bin_map_copy(source, target, env):
     # get locations and file names based on variant
     map_file = tasmotapiolib.get_final_map_path(env)
     bin_file = tasmotapiolib.get_final_bin_path(env)
+    one_bin_file = bin_file
 
     if env["PIOPLATFORM"] == "espressif32":
         factory_tmp = pathlib.Path(firsttarget).with_suffix("")
@@ -19,7 +22,7 @@ def bin_map_copy(source, target, env):
         one_bin_file = one_bin_tmp.with_suffix(one_bin_tmp.suffix + ".factory.bin")
 
     # check if new target files exist and remove if necessary
-    for f in [map_file, bin_file]:
+    for f in [map_file, bin_file, one_bin_file]:
         if f.is_file():
             f.unlink()
 
@@ -30,5 +33,7 @@ def bin_map_copy(source, target, env):
         shutil.copy(tasmotapiolib.get_source_map_path(env), map_file)
         shutil.copy(factory, one_bin_file)
     else:
+        map_firm = join(env.subst("$BUILD_DIR")) + os.sep + "firmware.map"
+        shutil.copy(tasmotapiolib.get_source_map_path(env), map_firm)
         shutil.move(tasmotapiolib.get_source_map_path(env), map_file)
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", bin_map_copy)

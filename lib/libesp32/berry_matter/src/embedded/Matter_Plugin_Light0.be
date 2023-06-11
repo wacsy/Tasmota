@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import matter
+
 # Matter plug-in for core behavior
 
 # dummy declaration for solidification
@@ -27,6 +29,7 @@ class Matter_Plugin_Device end
 class Matter_Plugin_Light0 : Matter_Plugin_Device
   static var TYPE = "light0"                        # name of the plug-in in json
   static var NAME = "Light 0 On"                    # display name of the plug-in
+  static var UPDATE_TIME = 250                      # update every 250ms
   static var CLUSTERS  = {
     # 0x001D: inherited                             # Descriptor Cluster 9.5 p.453
     # 0x0003: inherited                             # Identify 1.2 p.16
@@ -51,8 +54,10 @@ class Matter_Plugin_Light0 : Matter_Plugin_Device
   def update_shadow()
     import light
     var light_status = light.get()
-    var pow = light_status.find('power', nil)
-    if pow != self.shadow_onoff self.attribute_updated(0x0006, 0x0000)   self.shadow_onoff = pow end
+    if light_status != nil
+      var pow = light_status.find('power', nil)
+      if pow != self.shadow_onoff self.attribute_updated(0x0006, 0x0000)   self.shadow_onoff = pow end
+    end
     super(self).update_shadow()
   end
 

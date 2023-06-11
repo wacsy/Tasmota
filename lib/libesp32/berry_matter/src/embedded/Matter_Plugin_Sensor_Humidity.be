@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import matter
+
 # Matter plug-in for core behavior
 
 # dummy declaration for solidification
@@ -38,7 +40,7 @@ class Matter_Plugin_Sensor_Humidity : Matter_Plugin_Sensor
   # This must be overriden.
   # This allows to convert the raw sensor value to the target one, typically int
   def pre_value(val)
-    return int(val * 100)     # 1/100th of percentage
+    return val != nil ? int(val * 100) : nil    # 1/100th of percentage
   end
 
   #############################################################
