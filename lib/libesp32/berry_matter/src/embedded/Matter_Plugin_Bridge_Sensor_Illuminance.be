@@ -28,7 +28,7 @@ class Matter_Plugin_Bridge_Sensor end
 
 class Matter_Plugin_Bridge_Sensor_Illuminance : Matter_Plugin_Bridge_Sensor
   static var TYPE = "http_illuminance"              # name of the plug-in in json
-  static var NAME = "&#x1F517; Illuminance"         # display name of the plug-in
+  static var NAME = "Illuminance"         # display name of the plug-in
 
   static var CLUSTERS  = {
     0x0400: [0,1,2,0xFFFC,0xFFFD],                  # Illuminance Measurement p.95 - no writable
@@ -64,7 +64,6 @@ class Matter_Plugin_Bridge_Sensor_Illuminance : Matter_Plugin_Bridge_Sensor
   # read an attribute
   #
   def read_attribute(session, ctx)
-    import string
     var TLV = matter.TLV
     var cluster = ctx.cluster
     var attribute = ctx.attribute
@@ -98,9 +97,8 @@ class Matter_Plugin_Bridge_Sensor_Illuminance : Matter_Plugin_Bridge_Sensor
   # Show values of the remote device as HTML
   def web_values()
     import webserver
-    import string
-    webserver.content_send(string.format("| %s &#128261; %ilux",
-                                         self.filter_name_html(),
+    self.web_values_prefix()        # display '| ' and name if present
+    webserver.content_send(format("&#128261; %ilux",
                                          int(self.shadow_value)))
   end
   
