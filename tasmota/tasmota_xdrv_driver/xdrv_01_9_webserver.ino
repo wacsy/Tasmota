@@ -2236,7 +2236,7 @@ void HandleBackupConfiguration(void)
   AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_BACKUP_CONFIGURATION));
 
   uint32_t config_len = SettingsConfigBackup();
-  if (!config_len) { return; }
+  if (!config_len) { return; }    // Unable to allocate buffer
 
   WiFiClient myClient = Webserver->client();
   Webserver->setContentLength(config_len);
@@ -2732,14 +2732,8 @@ void HandleUploadLoop(void) {
 
     AddLog(LOG_LEVEL_INFO, PSTR(D_LOG_UPLOAD D_FILE " %s"), upload.filename.c_str());
 
-    if (UPL_SETTINGS == Web.upload_file_type) {
-      if (!SettingsBufferAlloc()) {
-        Web.upload_error = 2;  // Not enough space
-        return;
-      }
-    }
 #ifdef USE_UFILESYS
-    else if (UPL_UFSFILE == Web.upload_file_type) {
+    if (UPL_UFSFILE == Web.upload_file_type) {
       if (!UfsUploadFileOpen(upload.filename.c_str())) {
         Web.upload_error = 2;
         return;
@@ -2752,6 +2746,16 @@ void HandleUploadLoop(void) {
   else if (UPLOAD_FILE_WRITE == upload.status) {
     if (0 == upload.totalSize) {  // First block received
       if (UPL_SETTINGS == Web.upload_file_type) {
+        uint32_t set_size = sizeof(TSettings);
+#ifdef USE_UFILESYS
+        if (('s' == upload.buf[2]) && ('e' == upload.buf[3])) {  // /.settings
+          set_size = upload.buf[14] + (upload.buf[15] << 8);
+        }
+#endif  // USE_UFILESYS
+        if (!SettingsBufferAlloc(set_size)) {
+          Web.upload_error = 2;  // Not enough space
+          return;
+        }
         Web.config_block_count = 0;
       }
 #ifdef USE_WEB_FW_UPGRADE
@@ -2821,7 +2825,7 @@ void HandleUploadLoop(void) {
     }  // First block received
 
     if (UPL_SETTINGS == Web.upload_file_type) {
-      if (upload.currentSize > (sizeof(TSettings) - (Web.config_block_count * HTTP_UPLOAD_BUFLEN))) {
+      if (upload.currentSize > (settings_size - (Web.config_block_count * HTTP_UPLOAD_BUFLEN))) {
         Web.upload_error = 9;  // File too large
         return;
       }
@@ -3369,9 +3373,11 @@ int WebGetConfig(char *buffer) {
       if (http_code == HTTP_CODE_OK || http_code == HTTP_CODE_MOVED_PERMANENTLY) {
         WiFiClient *stream = http.getStreamPtr();
         int len = http.getSize();
-        if ((len <= sizeof(TSettings)) && SettingsBufferAlloc()) {
+        if (len <= sizeof(TSettings)) { 
+          len = sizeof(TSettings);
+        }
+        if (SettingsBufferAlloc(len)) {
           uint8_t *buff = settings_buffer;
-          if (len == -1) { len = sizeof(TSettings); }
           while (http.connected() && (len > 0)) {
             size_t size = stream->available();
             if (size) {
