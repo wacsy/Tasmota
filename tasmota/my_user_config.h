@@ -42,12 +42,12 @@
 \*********************************************************************************************/
 
 // -- Master parameter control --------------------
-#define CFG_HOLDER             20              // [Reset 1] Change this value (max 32000) to load SECTION1 configuration parameters to flash
+#define CFG_HOLDER             21              // [Reset 1] Change this value (max 32000) to load SECTION1 configuration parameters to flash
                                                  // If following define is disabled it increases configuration corruption detection BUT
                                                  //  it only allows firmware upgrades starting from version 6.6.0.11
 
 // -- Project -------------------------------------
-#define PROJECT                "tas8_b3side"         // PROJECT is used as the default topic delimiter
+#define PROJECT                "esp32-b1th"         // PROJECT is used as the default topic delimiter
 
 // If not selected the default will be SONOFF_BASIC
 //#define MODULE                 SONOFF_BASIC      // [Module] Select default module from tasmota_template.h
@@ -94,7 +94,7 @@
 #define MQTT_LOG_LEVEL         LOG_LEVEL_NONE    // [MqttLog] (LOG_LEVEL_NONE, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG, LOG_LEVEL_DEBUG_MORE)
 
 // -- Ota -----------------------------------------
-#define OTA_URL                "http://ophp.h/tas8/tasmota8.bin"  // [OtaUrl]
+#define OTA_URL                "http://ophp.h/tas32/tasmota32.bin"  // [OtaUrl]
 
 // -- MQTT ----------------------------------------
 #define MQTT_USE               true              // [SetOption3] Select default MQTT use (false = Off, true = On)
@@ -169,7 +169,7 @@
 // -- HTTP ----------------------------------------
 #define WEB_SERVER             2                 // [WebServer] Web server (0 = Off, 1 = Start as User, 2 = Start as Admin)
 #define WEB_PASSWORD           ""                // [WebPassword] Web server Admin mode Password for WEB_USERNAME (empty string = Disable)
-#define FRIENDLY_NAME          "B3SIDE"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
+#define FRIENDLY_NAME          "B1TH"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
 #define EMULATION              EMUL_NONE         // [Emulation] Select Belkin WeMo (single relay/light) or Hue Bridge emulation (multi relay/light) (EMUL_NONE, EMUL_WEMO or EMUL_HUE)
 #define EMULATION_HUE_1ST_GEN  false             // [Emulation] Force SetOption109 1 - if you only have Echo Dot 2nd gen devices
 //#define USE_CORS                                 // [Cors] Enable CORS - Be aware that this feature is unsecure ATM (https://github.com/arendst/Tasmota/issues/6767)
@@ -488,9 +488,9 @@
 
 // -- Rules or Script  ----------------------------
 // Select none or only one of the below defines USE_RULES or USE_SCRIPT
-#define USE_RULES                                // Add support for rules (+8k code)
- #define USE_EXPRESSION                         // Add support for expression evaluation in rules (+3k2 code, +64 bytes mem)
-   #define SUPPORT_IF_STATEMENT                 // Add support for IF statement in rules (+4k2 code, -332 bytes mem)
+// #define USE_RULES                                // Add support for rules (+8k code)
+//  #define USE_EXPRESSION                         // Add support for expression evaluation in rules (+3k2 code, +64 bytes mem)
+//    #define SUPPORT_IF_STATEMENT                 // Add support for IF statement in rules (+4k2 code, -332 bytes mem)
 //  #define USER_RULE1 "<Any rule1 data>"          // Add rule1 data saved at initial firmware load or when command reset is executed
 //  #define USER_RULE2 "<Any rule2 data>"          // Add rule2 data saved at initial firmware load or when command reset is executed
 //  #define USER_RULE3 "<Any rule3 data>"          // Add rule3 data saved at initial firmware load or when command reset is executed
@@ -1116,42 +1116,42 @@
 //#define USE_SPI                                  // Add support for hardware SPI
 //#define USE_MI_ESP32                             // Add support for ESP32 as a BLE-bridge (+9k2 mem, +292k flash)
 #define USE_BLE_ESP32                            // Add support for ESP32 as a BLE-bridge (+9k2? mem, +292k? flash)
-//#define USE_IBEACON                              // Add support for bluetooth LE passive scan of ibeacon devices (uses HM17 module)
-//#define USE_IBEACON_ESP32
+#define USE_IBEACON                              // Add support for bluetooth LE passive scan of ibeacon devices (uses HM17 module)
+#define USE_IBEACON_ESP32
 //#define USE_WEBCAM                               // Add support for webcam
 
-#define USE_AUTOCONF                             // Enable Esp32 autoconf feature, requires USE_BERRY and USE_WEBCLIENT_HTTPS (12KB Flash)
+// #define USE_AUTOCONF                             // Enable Esp32 autoconf feature, requires USE_BERRY and USE_WEBCLIENT_HTTPS (12KB Flash)
 #define USE_BERRY                                // Enable Berry scripting language
   #define USE_BERRY_PYTHON_COMPAT                // Enable by default `import python_compat`
   #define USE_BERRY_TIMEOUT             4000     // Timeout in ms, will raise an exception if running time exceeds this timeout
-  #define USE_BERRY_PSRAM                        // Allocate Berry memory in PSRAM if PSRAM is connected - this might be slightly slower but leaves main memory intact
-  #define USE_BERRY_IRAM                         // Allocate some data structures in IRAM (which is ususally unused) when possible and if no PSRAM is available
+  // #define USE_BERRY_PSRAM                        // Allocate Berry memory in PSRAM if PSRAM is connected - this might be slightly slower but leaves main memory intact
+  // #define USE_BERRY_IRAM                         // Allocate some data structures in IRAM (which is ususally unused) when possible and if no PSRAM is available
   #define USE_BERRY_FAST_LOOP_SLEEP_MS  5        // Minimum time in milliseconds to before calling again `tasmota.fast_loop()`, a smaller value will consume more CPU (min 1ms)
   #define USE_BERRY_DEBUG                        // Compile Berry bytecode with line number information, makes exceptions easier to debug. Adds +8% of memory consumption for compiled code
      #define UBE_BERRY_DEBUG_GC                   // Print low-level GC metrics
      #define USE_BERRY_INT64                        // Add 64 bits integer support (+1.7KB Flash)
   #define USE_WEBCLIENT                          // Enable `webclient` to make HTTP/HTTPS requests. Can be disabled for security reasons.
-    // #define USE_WEBCLIENT_HTTPS                  // Enable HTTPS outgoing requests based on BearSSL (much ligher then mbedTLS, 42KB vs 150KB) in insecure mode (no verification of server's certificate)
+    #define USE_WEBCLIENT_HTTPS                  // Enable HTTPS outgoing requests based on BearSSL (much ligher then mbedTLS, 42KB vs 150KB) in insecure mode (no verification of server's certificate)
                                                  // Note that only one cipher is enabled: ECDHE_RSA_WITH_AES_128_GCM_SHA256 which is very commonly used and highly secure
     #define USE_BERRY_WEBCLIENT_USERAGENT  "TasClient" // default user-agent used, can be changed with `wc.set_useragent()`
     #define USE_BERRY_WEBCLIENT_TIMEOUT  2000    // Default timeout in milliseconds
-    //#define USE_BERRY_PARTITION_WIZARD           // Add a button to dynamically load the Partion Wizard from a bec file online (+1.3KB Flash)
+    // #define USE_BERRY_PARTITION_WIZARD           // Add a button to dynamically load the Partion Wizard from a bec file online (+1.3KB Flash)
     #define USE_BERRY_PARTITION_WIZARD_URL      "http://ota.tasmota.com/tapp/partition_wizard.bec"
-  #define USE_BERRY_TCPSERVER                    // Enable TCP socket server (+0.6k)
+  // #define USE_BERRY_TCPSERVER                    // Enable TCP socket server (+0.6k)
   // #define USE_BERRY_ULP                          // Enable ULP (Ultra Low Power) support (+4.9k)
   // Berry crypto extensions below:
-  #define USE_BERRY_CRYPTO_AES_GCM               // enable AES GCM 256 bits
+  // #define USE_BERRY_CRYPTO_AES_GCM               // enable AES GCM 256 bits
   // #define USE_BERRY_CRYPTO_AES_CCM               // enable AES CCM 128 bits
   // #define USE_BERRY_CRYPTO_AES_CTR               // enable AES CTR 256 bits
   // #define USE_BERRY_CRYPTO_EC_P256               // enable EC P256r1
   // #define USE_BERRY_CRYPTO_EC_C25519             // enable Elliptic Curve C C25519
-  #define USE_BERRY_CRYPTO_SHA256                // enable SHA256 hash function
-  #define USE_BERRY_CRYPTO_HMAC_SHA256           // enable HMAC SHA256 hash function
+  // #define USE_BERRY_CRYPTO_SHA256                // enable SHA256 hash function
+  // #define USE_BERRY_CRYPTO_HMAC_SHA256           // enable HMAC SHA256 hash function
   // #define USE_BERRY_CRYPTO_PBKDF2_HMAC_SHA256    // PBKDF2 with HMAC SHA256, used in Matter protocol
   // #define USE_BERRY_CRYPTO_HKDF_SHA256      // HKDF with HMAC SHA256, used in Matter protocol
   // #define USE_BERRY_CRYPTO_SPAKE2P_MATTER   // SPAKE2+ used in Matter 1.0, complete name is SPAKE2+-P256-SHA256-HKDF-SHA256-HMAC-SHA256
   // #define USE_BERRY_CRYPTO_RSA              // RSA primitives including JWT RS256 (3.9KB flash)
-#define USE_CSE7761                              // Add support for CSE7761 Energy monitor as used in Sonoff Dual R3
+// #define USE_CSE7761                              // Add support for CSE7761 Energy monitor as used in Sonoff Dual R3
 
 // -- LVGL Graphics Library ---------------------------------
   // #define USE_LVGL                                 // LVGL Engine, requires Berry (+382KB)
