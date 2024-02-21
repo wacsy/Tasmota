@@ -57,6 +57,7 @@
 #define D_AP "Ponto de acesso"     	// Ponto de Acesso
 #define D_AS "como"
 #define D_AUTO "Auto"
+#define D_BATTERY "Battery"
 #define D_BATT "Bat"                // Short for Battery
 #define D_BATTERY_CHARGE "Charge"  // Battery charge in %
 #define D_BLINK "Piscar"
@@ -118,6 +119,7 @@
 #define D_GROUP "Grupo"
 #define D_HOST "Host"
 #define D_HALL_EFFECT "Efeito Hall"
+#define D_HEATINDEX "Heat index"
 #define D_HOSTNAME "Nome do Host"
 #define D_HUMIDITY "Umidade"
 #define D_ILLUMINANCE "Luminância"
@@ -274,7 +276,8 @@
 #define D_CONFIGURATION "Configuração"
 #define D_INFORMATION "Informação"
 #define D_FIRMWARE_UPGRADE "Atualização de firmware"
-#define D_MANAGEMENT "Consoles"
+#define D_MANAGEMENT "Tools"
+#define D_GPIO_VIEWER "GPIO Viewer"
 #define D_CONSOLE "Console"
 #define D_CONFIRM_RESTART "Confirmar o reinicio"
 
@@ -546,12 +549,13 @@
 #define D_DEVICE_INPUT "Entrada"
 #define D_DEVICE_OUTPUT "Saída"
 
-// xdrv_39_thermostat.ino
+// xdrv_39_thermostat.ino, xdrv_85_esp32_ble_eq3_trv.ino
 #define D_THERMOSTAT                  "Thermostat"
 #define D_THERMOSTAT_SET_POINT        "Set Point Temperature"
 #define D_THERMOSTAT_SENSOR           "Current Temperature"
 #define D_THERMOSTAT_GRADIENT         "Gradient Temperature"
 #define D_THERMOSTAT_DUTY_CYCLE       "Duty cycle"
+#define D_THERMOSTAT_VALVE_POSITION   "Valve Position"
 #define D_THERMOSTAT_CYCLE_TIME       "Cycle time"
 #define D_THERMOSTAT_PI_AUTOTUNE      "PI Auto tuning"
 #define D_THERMOSTAT_CONTROL_METHOD   "Control method"
@@ -957,6 +961,7 @@
 #define D_SENSOR_BIOPDU_PZEM016_RX "BioPDU PZEM016 Rx"
 #define D_SENSOR_BIOPDU_BIT    "BioPDU Bit"
 #define D_SENSOR_LOX_O2_RX     "LoxO2 RX"
+#define D_GPIO_MAGIC_SWITCH "MagicSwitch"
 
 // Units
 #define D_UNIT_AMPERE "A"
@@ -1220,5 +1225,9 @@
 // xsns_106_gdk101.ino
 #define D_AVG_RAD_DOSE                    "dose média de radiação"
 #define D_UNIT_US_H                       "µSv/h"
+
+// ixrv92_pipsolar.ino
+#define D_SENSOR_PIPSOLAR_TX             "Pipsolar TX"
+#define D_SENSOR_PIPSOLAR_RX             "Pipsolar RX"
 
 #endif  // _LANGUAGE_PT_BR_H_

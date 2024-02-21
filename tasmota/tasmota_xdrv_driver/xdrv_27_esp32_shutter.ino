@@ -1,7 +1,7 @@
 /*
   xdrv_27_esp32_shutter.ino - Shutter/Blind support for Tasmota
 
-  Copyright (C) 2023  Stefan Bode
+  Copyright (C) 2024  Stefan Bode
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -46,8 +46,10 @@
 #define D_ERROR_FILE_NOT_FOUND "SHT: ERROR File system not ready or file not found"
 
 const char HTTP_MSG_SLIDER_SHUTTER[] PROGMEM =
+  "<tr><td colspan=2>"
   "<div><span class='p'>%s</span><span class='q'>%s</span></div>"
-  "<div><input type='range' min='0' max='100' value='%d' onchange='lc(\"u\",%d,value)'></div>";
+  "<div><input type='range' min='0' max='100' value='%d' onchange='lc(\"u\",%d,value)'></div>"
+  "{e}";
 
 const uint16_t SHUTTER_VERSION = 0x0100;  // Latest driver version (See settings deltas below)
 
@@ -685,7 +687,7 @@ void ShutterInit(void)
           Shutter[i].min_realPositionChange = 0;
         break;
         case SHT_COUNTER:
-          Shutter[i].min_realPositionChange = SHT_DIV_ROUND(Shutter[i].min_realPositionChange, Shutter[i].motordelay);
+          Shutter[i].min_realPositionChange = SHT_DIV_ROUND(Shutter[i].min_realPositionChange, Shutter[i].motordelay > 0?Shutter[i].motordelay : 1);
         break;
       }
 
@@ -1162,6 +1164,7 @@ void ShutterShow()
 {
   for (uint32_t i = 0; i < TasmotaGlobal.shutters_present; i++) {
     WSContentSend_P(HTTP_MSG_SLIDER_SHUTTER,  (ShutterGetOptions(i) & 1) ? D_OPEN : D_CLOSE,(ShutterGetOptions(i) & 1) ? D_CLOSE : D_OPEN, (ShutterGetOptions(i) & 1) ? (100 - ShutterRealToPercentPosition(-9999, i)) : ShutterRealToPercentPosition(-9999, i), i+1);
+    WSContentSeparator(3); // Don't print separator on next WSContentSeparator(1)
   }
 }
 
@@ -1821,13 +1824,15 @@ void CmndShutterPosition(void)
         }
       }
 
+      // special handling fo UP,DOWN,TOGGLE,STOP and similar commands command 
+      // 
+      if ( XdrvMailbox.data_len > 0 ) {
+        // set len to 0 to avoid loop 
+        uint32_t data_len_save = XdrvMailbox.data_len;
+        int32_t  payload_save  = XdrvMailbox.payload;
+        XdrvMailbox.data_len   = 0;
+        XdrvMailbox.payload    = -99;
 
-      // value 0 with data_len > 0 can mean Open
-      // special handling fo UP,DOWN,TOGGLE,STOP command comming with payload -99
-      // STOP will come with payload 0 because predefined value in TASMOTA
-      if ((XdrvMailbox.data_len > 3) && (XdrvMailbox.payload <= 0)) {
-        // set len to 0 to avoid loop on close where payload is 0
-        XdrvMailbox.data_len = 0;
         if (!strcasecmp(XdrvMailbox.data,D_CMND_SHUTTER_UP) || !strcasecmp(XdrvMailbox.data,D_CMND_SHUTTER_OPEN) || ((Shutter[index].direction==0) && !strcasecmp(XdrvMailbox.data,D_CMND_SHUTTER_STOPOPEN))) {
           CmndShutterOpen();
           return;
@@ -1845,12 +1850,12 @@ void CmndShutterPosition(void)
           return;
         }
         if (!strcasecmp(XdrvMailbox.data,D_CMND_SHUTTER_STOP) || ((Shutter[index].direction) && (!strcasecmp(XdrvMailbox.data,D_CMND_SHUTTER_STOPOPEN) || !strcasecmp(XdrvMailbox.data,D_CMND_SHUTTER_STOPCLOSE)))) {
-          // Back to normal: all -99 if not a clear position
-          XdrvMailbox.payload = -99;
           CmndShutterStop();
           return;
         }
-
+        // restore values
+        XdrvMailbox.payload  = payload_save;
+        XdrvMailbox.data_len = data_len_save;
       }
 
       int8_t target_pos_percent = (XdrvMailbox.payload < 0) ? (XdrvMailbox.payload == -99 ? ShutterRealToPercentPosition(Shutter[index].real_position, index) : 0) : ((XdrvMailbox.payload > 100) ? 100 : XdrvMailbox.payload);
@@ -2309,6 +2314,11 @@ bool Xdrv27(uint32_t function)
           XdrvMailbox.index    = i;
           XdrvMailbox.payload  = rescue_payload;
           XdrvMailbox.data_len = rescue_data_len;
+	  if (!ShutterSettings.version) {
+            ShutterSettingsLoad(0);
+            ShutterSettings.shutter_startrelay[0] = 1;
+            ShutterInit();
+          }
           result = DecodeCommand(kShutterCommands, ShutterCommand);
         }
         break;
@@ -2371,6 +2381,9 @@ bool Xdrv27(uint32_t function)
         ShutterShow();
         break;
 #endif  // USE_WEBSERVER
+      case FUNC_ACTIVE:
+        result = true;
+        break;
     }
   }
   return result;

@@ -579,6 +579,7 @@ bool IsNumeric(const char* value) {
 
 char* Trim(char* p) {
   // Remove leading and trailing tab, \n, \v, \f, \r and space
+  if (p == nullptr) { return p; }
   if (*p != '\0') {
     while ((*p != '\0') && isspace(*p)) { p++; }  // Trim leading spaces
     char* q = p + strlen(p) -1;
@@ -856,6 +857,38 @@ float CalcTempHumToDew(float t, float h) {
   }
   return result;
 }
+
+#ifdef USE_HEAT_INDEX
+float CalcTemHumToHeatIndex(float t, float h) {
+  if (isnan(h) || isnan(t)) { return NAN; }
+
+  if (!Settings->flag.temperature_conversion) {                // SetOption8 - Switch between Celsius or Fahrenheit
+    t = t * 1.8f + 32;                                         // Fahrenheit
+  }
+  float hi = 0.5 * (t + 61.0 + ((t - 68.0) * 1.2) + (h * 0.094));
+  if (hi > 79) {
+    float pt = t * t;  // pow(t, 2)
+    float ph = h * h;  // pow(h, 2)
+    hi = -42.379 + 2.04901523 * t + 10.14333127 * h +
+         -0.22475541 * t * h +
+         -0.00683783 * pt +
+         -0.05481717 * ph +
+         0.00122874 * pt * h +
+         0.00085282 * t * ph +
+         -0.00000199 * pt * ph;
+    if ((h < 13) && (t >= 80.0) && (t <= 112.0)) {
+      hi -= ((13.0 - h) * 0.25) * sqrtf((17.0 - abs(t - 95.0)) * 0.05882);
+    }
+    else if ((h > 85.0) && (t >= 80.0) && (t <= 87.0)) {
+      hi += ((h - 85.0) * 0.1) * ((87.0 - t) * 0.2);
+    }
+  }
+  if (!Settings->flag.temperature_conversion) {                // SetOption8 - Switch between Celsius or Fahrenheit
+    hi = (hi - 32) / 1.8f;                                     // Celsius
+  }
+  return hi;
+}
+#endif  // USE_HEAT_INDEX
 
 float CalcTempHumToAbsHum(float t, float h) {
   if (isnan(t) || isnan(h)) { return NAN; }
@@ -1337,13 +1370,19 @@ int ResponseAppendTime(void)
   return ResponseAppendTimeFormat(Settings->flag2.time_format);
 }
 
-int ResponseAppendTHD(float f_temperature, float f_humidity)
-{
+int ResponseAppendTHD(float f_temperature, float f_humidity) {
   float dewpoint = CalcTempHumToDew(f_temperature, f_humidity);
-  return ResponseAppend_P(PSTR("\"" D_JSON_TEMPERATURE "\":%*_f,\"" D_JSON_HUMIDITY "\":%*_f,\"" D_JSON_DEWPOINT "\":%*_f"),
-                          Settings->flag2.temperature_resolution, &f_temperature,
-                          Settings->flag2.humidity_resolution, &f_humidity,
-                          Settings->flag2.temperature_resolution, &dewpoint);
+  int len = ResponseAppend_P(PSTR("\"" D_JSON_TEMPERATURE "\":%*_f,\"" D_JSON_HUMIDITY "\":%*_f,\"" D_JSON_DEWPOINT "\":%*_f"),
+                             Settings->flag2.temperature_resolution, &f_temperature,
+                             Settings->flag2.humidity_resolution, &f_humidity,
+                             Settings->flag2.temperature_resolution, &dewpoint);
+#ifdef USE_HEAT_INDEX
+  float heatindex = CalcTemHumToHeatIndex(TasmotaGlobal.temperature_celsius, TasmotaGlobal.humidity);
+  int len2 = ResponseAppend_P(PSTR(",\"" D_JSON_HEATINDEX "\":%*_f"),
+                              Settings->flag2.temperature_resolution, &heatindex);
+  return len + len2;                              
+#endif  // USE_HEAT_INDEX
+  return len;
 }
 
 int ResponseJsonEnd(void)
@@ -1679,8 +1718,10 @@ bool FlashPin(uint32_t pin) {
   return (((pin > 5) && (pin < 9)) || (11 == pin));
 #endif  // ESP8266
 #ifdef ESP32
-#if CONFIG_IDF_TARGET_ESP32C2 || CONFIG_IDF_TARGET_ESP32C3
+#if CONFIG_IDF_TARGET_ESP32C2
   return (((pin > 10) && (pin < 12)) || ((pin > 13) && (pin < 18)));  // ESP32C3 has GPIOs 11-17 reserved for Flash, with some boards GPIOs 12 13 are useable
+#elif CONFIG_IDF_TARGET_ESP32C3
+  return ((pin > 13) && (pin < 18));   // ESP32C3 has GPIOs 11-17 reserved for Flash, with some boards GPIOs 11 12 13 are useable
 #elif CONFIG_IDF_TARGET_ESP32C6
   return ((pin == 24) || (pin == 25) || (pin == 27) || (pin == 29) || (pin == 30));  // ESP32C6 has GPIOs 24-30 reserved for Flash, with some boards GPIOs 26 28 are useable
 #elif CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
@@ -1696,8 +1737,10 @@ bool RedPin(uint32_t pin) {            // Pin may be dangerous to change, displa
   return (9 == pin) || (10 == pin);
 #endif  // ESP8266
 #ifdef ESP32
-#if CONFIG_IDF_TARGET_ESP32C2 || CONFIG_IDF_TARGET_ESP32C3
-  return (12 == pin) || (13 == pin);   // ESP32C3: GPIOs 12 13 are usually used for Flash (mode QIO/QOUT)
+#if CONFIG_IDF_TARGET_ESP32C2
+  return (12 == pin) || (13 == pin);   // ESP32C2: GPIOs 12 13 are usually used for Flash (mode QIO/QOUT)
+#elif CONFIG_IDF_TARGET_ESP32C3
+  return (11 == pin) || (12 == pin) || (13 == pin);  // ESP32C3: GPIOs 11 12 13 are usually used for Flash (mode QIO/QOUT)
 #elif CONFIG_IDF_TARGET_ESP32C6
   return (26 == pin) || (28 == pin);   // ESP32C6: GPIOs 26 28 are usually used for Flash (mode QIO/QOUT)
 #elif CONFIG_IDF_TARGET_ESP32S2
@@ -2297,8 +2340,9 @@ void SyslogAsync(bool refresh) {
   char* line;
   size_t len;
   while (GetLog(TasmotaGlobal.syslog_level, &index, &line, &len)) {
-    // 00:00:02.096 HTP: Web server active on wemos5 with IP address 192.168.2.172
-    //              HTP: Web server active on wemos5 with IP address 192.168.2.172
+    // <--- mxtime ---> TAG: <---------------------- MSG ---------------------------->
+    // 00:00:02.096-029 HTP: Web server active on wemos5 with IP address 192.168.2.172
+    //                  HTP: Web server active on wemos5 with IP address 192.168.2.172
     uint32_t mxtime = strchr(line, ' ') - line +1;  // Remove mxtime
     if (mxtime > 0) {
       uint32_t current_hash = GetHash(SettingsText(SET_SYSLOG_HOST), strlen(SettingsText(SET_SYSLOG_HOST)));
@@ -2321,7 +2365,63 @@ void SyslogAsync(bool refresh) {
       }
 
       char header[64];
-      snprintf_P(header, sizeof(header), PSTR("%s ESP-"), NetworkHostname());
+      /* Legacy format (until v13.3.0.1) - HOSTNAME TAG: MSG
+         SYSLOG-MSG = wemos5 ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+         Result = 2023-12-20T13:41:11.825749+01:00 wemos5 ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+           and below message in syslog if hostname starts with a "z"
+         2023-12-17T00:09:52.797782+01:00 domus8 rsyslogd: Uncompression of a message failed with return code -3 - enable debug logging if you need further information. Message ignored. [v8.2302.0]
+         Notice in both cases the date and time is taken from the syslog server
+      */
+//      snprintf_P(header, sizeof(header), PSTR("%s ESP-"), NetworkHostname());
+
+      /* Legacy format - <PRI>HOSTNAME TAG: MSG
+         <PRI> = Facility 16 (= local use 0), Severity 6 (= informational) => 16 * 8 + 6 = <134>
+         SYSLOG-MSG = <134>wemos5 ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+         Result = 2023-12-21T11:31:50.378816+01:00 wemos5 ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+         Notice in both cases the date and time is taken from the syslog server. Uncompression message is gone.
+      */
+      snprintf_P(header, sizeof(header), PSTR("<134>%s ESP-"), NetworkHostname());
+
+//       SYSLOG-MSG = <134>wemos5 Tasmota HTP: Web server active on wemos5 with IP address 192.168.2.172
+//       Result = 2023-12-21T11:31:50.378816+01:00 wemos5 Tasmota HTP: Web server active on wemos5 with IP address 192.168.2.172
+//      snprintf_P(header, sizeof(header), PSTR("<134>%s Tasmota "), NetworkHostname());
+
+      /* RFC3164 - BSD syslog protocol - <PRI>TIMESTAMP HOSTNAME TAG: MSG
+         <PRI> = Facility 16 (= local use 0), Severity 6 (= informational) => 16 * 8 + 6 = <134>
+         TIMESTAMP = Mmm dd hh:mm:ss
+         TAG: = ESP-HTP:
+         SYSLOG-MSG = <134>Jan  1 00:00:02 wemos5 ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+         Result = 2023-01-01T00:00:02+01:00 wemos5 ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+         Notice Year is taken from syslog server. Month, day and time is provided by Tasmota device. No milliseconds
+      */
+//      snprintf_P(header, sizeof(header), PSTR("<134>%s %s ESP-"), GetSyslogDate(line).c_str(), NetworkHostname());
+
+//       SYSLOG-MSG = <134>Jan  1 00:00:02 wemos5 Tasmota HTP: Web server active on wemos5 with IP address 192.168.2.172
+//       Result = 2023-01-01T00:00:02+01:00 wemos5 Tasmota HTP: Web server active on wemos5 with IP address 192.168.2.172
+//      snprintf_P(header, sizeof(header), PSTR("<134>%s %s Tasmota "), GetSyslogDate(line).c_str(), NetworkHostname());
+
+      /* RFC5425 - Syslog protocol - <PRI>VERSION TIMESTAMP HOSTNAME APP_NAME PROCID STRUCTURED-DATA MSGID MSG
+         <PRI> = Facility 16 (= local use 0), Severity 6 (= informational) => 16 * 8 + 6 = <134>
+         VERSION = 1
+         TIMESTAMP = yyyy-mm-ddThh:mm:ss.nnnnnn-hh:mm (= local with timezone)
+         APP_NAME = Tasmota
+         PROCID = -
+         STRUCTURED-DATA = -
+         MSGID = ESP-HTP:
+         SYSLOG-MSG = <134>1 1970-01-01T00:00:02.096000+01:00 wemos5 Tasmota - - ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+         Result = 1970-01-01T00:00:02.096000+00:00 wemos5 Tasmota ESP-HTP: Web server active on wemos5 with IP address 192.168.2.172
+         Notice date and time is provided by Tasmota device.
+      */
+//      char line_time[mxtime];
+//      subStr(line_time, line, " ", 1);                                 // 00:00:02.096-026
+//      subStr(line_time, line_time, "-", 1);                            // 00:00:02.096
+//      String systime = GetDate() + line_time + "000" + GetTimeZone();  // 1970-01-01T00:00:02.096000+01:00
+//      snprintf_P(header, sizeof(header), PSTR("<134>1 %s %s Tasmota - - ESP-"), systime.c_str(), NetworkHostname());
+
+//       SYSLOG-MSG = <134>1 1970-01-01T00:00:02.096000+01:00 wemos5 Tasmota - - HTP: Web server active on wemos5 with IP address 192.168.2.172
+//       Result = 1970-01-01T00:00:02.096000+00:00 wemos5 Tasmota HTP: Web server active on wemos5 with IP address 192.168.2.172
+//      snprintf_P(header, sizeof(header), PSTR("<134>1 %s %s Tasmota - - "), systime.c_str(), NetworkHostname());
+
       char* line_start = line +mxtime;
 #ifdef ESP8266
       // Packets over 1460 bytes are not send
@@ -2508,6 +2608,15 @@ uint32_t HighestLogLevel() {
 }
 
 void AddLog(uint32_t loglevel, PGM_P formatP, ...) {
+#ifdef ESP32
+  if (xPortInIsrContext()) {
+    // When called from an ISR, you should not send out logs.
+    // Allocating memory from within an ISR is a big no-no.
+    // Also long-time blocking like sending logs (especially to a syslog server) 
+    // is also really not a good idea from an ISR call.
+    return;
+  }
+#endif
   uint32_t highest_loglevel = HighestLogLevel();
 
   // If no logging is requested then do not access heap to fight fragmentation

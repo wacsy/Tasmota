@@ -980,7 +980,8 @@ void MqttConnected(void) {
           ResponseAppend_P(PSTR(",\"" D_JSON_IP6_LOCAL "\":\"%s\""), WifiGetIPv6LinkLocalStr().c_str());
 #endif  // USE_IPV6
         }
-#if defined(ESP32) && CONFIG_IDF_TARGET_ESP32 && defined(USE_ETHERNET)
+//#if defined(ESP32) && CONFIG_IDF_TARGET_ESP32 && defined(USE_ETHERNET)
+#if defined(ESP32) && defined(USE_ETHERNET)
         if (static_cast<uint32_t>(EthernetLocalIP()) != 0) {
           ResponseAppend_P(PSTR(",\"Ethernet\":{\"" D_CMND_HOSTNAME "\":\"%s\",\"" D_CMND_IPADDRESS "\":\"%_I\"}"),
             EthernetHostname(), (uint32_t)EthernetLocalIP());
@@ -1974,16 +1975,16 @@ void HandleMqttConfiguration(void)
   WSContentStart_P(PSTR(D_CONFIGURE_MQTT));
   WSContentSendStyle();
   WSContentSend_P(HTTP_FORM_MQTT1,
-    SettingsText(SET_MQTT_HOST),
+    SettingsTextEscaped(SET_MQTT_HOST).c_str(),
     Settings->mqtt_port,
 #ifdef USE_MQTT_TLS
     Mqtt.mqtt_tls ? PSTR(" checked") : "",      // SetOption103 - Enable MQTT TLS
 #endif // USE_MQTT_TLS
-    Format(str, PSTR(MQTT_CLIENT_ID), sizeof(str)), PSTR(MQTT_CLIENT_ID), SettingsText(SET_MQTT_CLIENT));
+    Format(str, PSTR(MQTT_CLIENT_ID), sizeof(str)), PSTR(MQTT_CLIENT_ID), SettingsTextEscaped(SET_MQTT_CLIENT).c_str());
   WSContentSend_P(HTTP_FORM_MQTT2,
-    (!strlen(SettingsText(SET_MQTT_USER))) ? "0" : SettingsText(SET_MQTT_USER),
-    Format(str, PSTR(MQTT_TOPIC), sizeof(str)), PSTR(MQTT_TOPIC), SettingsText(SET_MQTT_TOPIC),
-    PSTR(MQTT_FULLTOPIC), PSTR(MQTT_FULLTOPIC), SettingsText(SET_MQTT_FULLTOPIC));
+    (!strlen(SettingsText(SET_MQTT_USER))) ? "0" : SettingsTextEscaped(SET_MQTT_USER).c_str(),
+    Format(str, PSTR(MQTT_TOPIC), sizeof(str)), PSTR(MQTT_TOPIC), SettingsTextEscaped(SET_MQTT_TOPIC).c_str(),
+    PSTR(MQTT_FULLTOPIC), PSTR(MQTT_FULLTOPIC), SettingsTextEscaped(SET_MQTT_FULLTOPIC).c_str());
   WSContentSend_P(HTTP_FORM_END);
   WSContentSpaceButton(BUTTON_CONFIGURATION);
   WSContentStop();
@@ -2032,6 +2033,9 @@ bool Xdrv02(uint32_t function)
         break;
       case FUNC_PRE_INIT:
         MqttInit();
+        break;
+      case FUNC_ACTIVE:
+        result = true;
         break;
     }
   }

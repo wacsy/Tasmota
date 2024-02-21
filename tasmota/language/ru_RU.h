@@ -58,6 +58,7 @@
 #define D_AP "AP"                    // Access Point
 #define D_AS "как"
 #define D_AUTO "АВТО"
+#define D_BATTERY "Battery"
 #define D_BATT "Batt"                // Short for Battery
 #define D_BATTERY_CHARGE "Charge"   // Battery charge in %
 #define D_BLINK "Мигать"
@@ -119,6 +120,7 @@
 #define D_GROUP "Группа"
 #define D_HOST "Хост"
 #define D_HALL_EFFECT "Hall Effect"
+#define D_HEATINDEX "Heat index"
 #define D_HOSTNAME "Имя хоста"
 #define D_HUMIDITY "Влажность"
 #define D_ILLUMINANCE "Освещенность"
@@ -276,6 +278,7 @@
 #define D_INFORMATION "Информация"
 #define D_FIRMWARE_UPGRADE "Обновление прошивки"
 #define D_MANAGEMENT "Управление"
+#define D_GPIO_VIEWER "GPIO Viewer"
 #define D_CONSOLE "Консоль"
 #define D_CONFIRM_RESTART "Перезагрузить устройство?"
 
@@ -547,12 +550,13 @@
 #define D_DEVICE_INPUT "Вход"
 #define D_DEVICE_OUTPUT "Выход"
 
-// xdrv_39_thermostat.ino
+// xdrv_39_thermostat.ino, xdrv_85_esp32_ble_eq3_trv.ino
 #define D_THERMOSTAT                  "Thermostat"
 #define D_THERMOSTAT_SET_POINT        "Set Point Temperature"
 #define D_THERMOSTAT_SENSOR           "Current Temperature"
 #define D_THERMOSTAT_GRADIENT         "Gradient Temperature"
 #define D_THERMOSTAT_DUTY_CYCLE       "Duty cycle"
+#define D_THERMOSTAT_VALVE_POSITION   "Valve Position"
 #define D_THERMOSTAT_CYCLE_TIME       "Cycle time"
 #define D_THERMOSTAT_PI_AUTOTUNE      "PI Auto tuning"
 #define D_THERMOSTAT_CONTROL_METHOD   "Control method"
@@ -958,6 +962,7 @@
 #define D_SENSOR_BIOPDU_PZEM016_RX "BioPDU PZEM016 Rx"
 #define D_SENSOR_BIOPDU_BIT    "BioPDU Bit"
 #define D_SENSOR_LOX_O2_RX     "LoxO2 RX"
+#define D_GPIO_MAGIC_SWITCH "MagicSwitch"
 
 // Units
 #define D_UNIT_AMPERE "А"
@@ -1221,5 +1226,9 @@
 // xsns_106_gdk101.ino
 #define D_AVG_RAD_DOSE                    "средняя доза облучения"
 #define D_UNIT_US_H                       "µSv/h"
+
+// ixrv92_pipsolar.ino
+#define D_SENSOR_PIPSOLAR_TX             "Pipsolar TX"
+#define D_SENSOR_PIPSOLAR_RX             "Pipsolar RX"
 
 #endif  // _LANGUAGE_RU_RU_H_
