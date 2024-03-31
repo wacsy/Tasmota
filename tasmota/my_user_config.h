@@ -42,12 +42,12 @@
 \*********************************************************************************************/
 
 // -- Master parameter control --------------------
-#define CFG_HOLDER             21              // [Reset 1] Change this value (max 32000) to load SECTION1 configuration parameters to flash
+#define CFG_HOLDER             2              // [Reset 1] Change this value (max 32000) to load SECTION1 configuration parameters to flash
                                                  // If following define is disabled it increases configuration corruption detection BUT
                                                  //  it only allows firmware upgrades starting from version 6.6.0.11
 
 // -- Project -------------------------------------
-#define PROJECT                "esp32-b1th"         // PROJECT is used as the default topic delimiter
+#define PROJECT                "BEDSR-T1"         // PROJECT is used as the default topic delimiter
 
 // If not selected the default will be SONOFF_BASIC
 //#define MODULE                 SONOFF_BASIC      // [Module] Select default module from tasmota_template.h
@@ -169,7 +169,7 @@
 // -- HTTP ----------------------------------------
 #define WEB_SERVER             2                 // [WebServer] Web server (0 = Off, 1 = Start as User, 2 = Start as Admin)
 #define WEB_PASSWORD           ""                // [WebPassword] Web server Admin mode Password for WEB_USERNAME (empty string = Disable)
-#define FRIENDLY_NAME          "B1TH"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
+#define FRIENDLY_NAME          "BEDSR"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
 #define EMULATION              EMUL_NONE         // [Emulation] Select Belkin WeMo (single relay/light) or Hue Bridge emulation (multi relay/light) (EMUL_NONE, EMUL_WEMO or EMUL_HUE)
 #define EMULATION_HUE_1ST_GEN  false             // [Emulation] Force SetOption109 1 - if you only have Echo Dot 2nd gen devices
 //#define USE_CORS                                 // [Cors] Enable CORS - Be aware that this feature is unsecure ATM (https://github.com/arendst/Tasmota/issues/6767)
@@ -386,15 +386,11 @@
 //#define MY_LANGUAGE            zh_CN           // Chinese (Simplified) in China
 //#define MY_LANGUAGE            zh_TW           // Chinese (Traditional) in Taiwan
 
-//#define USE_HEAT_INDEX                           // Show calculated Heat index from temperature and humidity (+1k4 code)
-
 // -- Wifi Config tools ---------------------------
 #define WIFI_SOFT_AP_CHANNEL   3                 // Soft Access Point Channel number between 1 and 13 as used by Wi-Fi Manager web GUI
 
 // -- ESP-NOW -------------------------------------
 //#define USE_TASMESH                              // Enable Tasmota Mesh using ESP-NOW (+11k code)
-//#define USE_TASMESH_HEARTBEAT                    // If enabled, the broker will detect when nodes come online and offline and send Birth and LWT messages over MQTT correspondingly
-//#define TASMESH_OFFLINE_DELAY  3                 // Maximum number of seconds since the last heartbeat before the broker considers a node to be offline
 
 // -- OTA -----------------------------------------
 //#define USE_ARDUINO_OTA                          // Add optional support for Arduino OTA with ESP8266 (+13k code)
@@ -417,7 +413,6 @@
 #define MQTT_TELE_RETAIN       0                 // Tele messages may send retain flag (0 = off, 1 = on)
 #define MQTT_CLEAN_SESSION     1                 // Mqtt clean session connection (0 = No clean session, 1 = Clean session (default))
 #define MQTT_DISABLE_SSERIALRECEIVED 0           // 1 = Disable sserialreceived mqtt messages, 0 = Enable sserialreceived mqtt messages (default)
-#define MQTT_DISABLE_MODBUSRECEIVED  0           // 1 = Disable ModbusReceived mqtt messages, 0 = Enable ModbusReceived mqtt messages (default)
 
 // -- MQTT - Domoticz -----------------------------
 //#define USE_DOMOTICZ                             // Enable Domoticz (+6k code, +0.3k mem)
@@ -441,7 +436,7 @@
 //  #define USE_MQTT_AWS_IOT                       // [Deprecated] Enable MQTT for AWS IoT - requires a private key (+11.9k code, +0.4k mem)
                                                  //   Note: you need to generate a private key + certificate per device and update 'tasmota/tasmota_aws_iot.cpp'
                                                  //   Full documentation here: https://github.com/arendst/Tasmota/wiki/AWS-IoT
- #define USE_MQTT_TLS_DROP_OLD_FINGERPRINT          // If you use fingerprint (i.e. not CA) validation, the algorithm changed to a more secure one.
+//  #define USE_MQTT_TLS_DROP_OLD_FINGERPRINT      // If you use fingerprint (i.e. not CA) validation, the algorithm changed to a more secure one.
                                                    // Any valid fingerprint with the old algo will be automatically updated to the new algo.
                                                    // Enable this if you want to disable the old algo check, which should be more secure
 //  for USE_4K_RSA (support for 4096 bits certificates, instead of 2048), you need to uncommend `-DUSE_4K_RSA` in `build_flags` from `platform.ini` or `platform_override.ini`
@@ -470,8 +465,6 @@
   #define USE_ENHANCED_GUI_WIFI_SCAN             // Enable Wi-Fi scan output with BSSID (+0k5 code)
 //  #define USE_WEBSEND_RESPONSE                   // Enable command WebSend response message (+1k code)
 //  #define USE_WEBGETCONFIG                       // Enable restoring config from external webserver (+0k6)
-//  #define USE_GPIO_VIEWER                        // Enable GPIO Viewer to see realtime GPIO states (+6k code)
-//    #define GV_SAMPLING_INTERVAL  100            // [GvSampling] milliseconds - Use Tasmota Scheduler (100) or Ticker (20..99,101..1000)
   #define USE_EMULATION_HUE                      // Enable Hue Bridge emulation for Alexa (+14k code, +2k mem common)
   #define USE_EMULATION_WEMO                     // Enable Belkin WeMo emulation for Alexa (+6k code, +2k mem common)
   // #define USE_CCLOADER                           // Enable CCLoader FW upgrade tool (for CC25xx devices)
@@ -502,11 +495,13 @@
 //  #define USER_RULE2 "<Any rule2 data>"          // Add rule2 data saved at initial firmware load or when command reset is executed
 //  #define USER_RULE3 "<Any rule3 data>"          // Add rule3 data saved at initial firmware load or when command reset is executed
 
-//#define USE_SCRIPT                               // Add support for script (+36k code, +1k mem)
-//  #define USE_SCRIPT_FATFS 4                     // Script: Add FAT FileSystem Support
-//  #define SUPPORT_MQTT_EVENT                     // Support trigger event with MQTT subscriptions (+3k5 code)
+// #define USE_SCRIPT                               // Add support for script (+17k code)
+//   #define USE_SCRIPT_FATFS 4                     // Script: Add FAT FileSystem Support
+//   #define SUPPORT_MQTT_EVENT                     // Support trigger event with MQTT subscriptions (+3k5 code)
+//   #define SCRIPT_LARGE_VNBUFF
+//   #define LARGE_ARRAYS
 
-//#define USER_BACKLOG "<Any command separated by a semicolon (;)>"  // Add commands executed at firmware load or when command reset is executed
+#define USER_BACKLOG "<Any command separated by a semicolon (;)>"  // Add commands executed at firmware load or when command reset is executed
 
 // -- Optional modules ----------------------------
 //#define ROTARY_V1                                // Add support for Rotary Encoder as used in MI Desk Lamp (+0k8 code)
@@ -539,9 +534,6 @@
 //   #define SHELLY_CMDS                            // Add command to send co-processor commands (+0k3 code)
 //   #define SHELLY_FW_UPGRADE                      // Add firmware upgrade option for co-processor (+3k4 code)
 //  #define SHELLY_VOLTAGE_MON                     // Add support for reading voltage and current measurment (-0k0 code)
-//#define USE_MAGIC_SWITCH                         // Add Sonoff MagicSwitch support as implemented in Sonoff Basic R4 (+612B flash, +64B IRAM for intr)
-//  #define MAGICSWITCH_MIN_PULSE  4000            // Overridable minimum pulse, also overridable by command MagicSwitchPulse (not saved to flash)
-//  #define MAGICSWITCH_MASKING_WINDOW_LEN  5      // Overridable masking window (in number of 50ms loops)
 
 // -- Optional light modules ----------------------
 // #define USE_LIGHT                                // Add support for light control
@@ -701,9 +693,6 @@
 //  #define USE_QMC5883L                           // [I2CDriver71] Enable QMC5883L magnetic induction sensor (I2C address 0x0D) (+0k8 code)
 //  #define USE_HMC5883L                           // [I2CDriver73] Enable HMC5883L magnetic induction sensor (I2C address 0x1E) (+1k3 code)
 //    #define QMC5883L_TEMP_SHIFT       23         // sensor temperature are not calibrated (only relativ measurement) and need an absolute ground value in °C (see datasheet)
-//    #define QMC5883L_OVERSAMPLE       1          // 0 .. 3 => 512, 256(default), 128, 64
-//    #define QMC5883L_GAUSS            0          // 0,1(default) => 2GAUSS, 8GAUSS(default)
-//    #define QMC5883L_FILTER           2          // 0 .. 3 => 10HZ, 50HZ, 109HZ(default), 200HZ
 //  #define USE_INA3221                            // [I2CDriver72] Enable INA3221 3-channel DC voltage and current sensor (I2C address 0x40-0x44) (+3.2k code)
 //    #define INA3221_ADDRESS1                     // allow to change the 1st address to search for INA3221 to 0x41..0x43
 //    #define INA3221_MAX_COUNT                    // change the number of devices to search for (default 4).
@@ -721,7 +710,6 @@
 //  #define USE_PCA9557                            // [I2cDriver81] Enable PCA9557 8-bit I/O Expander (I2C addresses 0x18 - 0x1F) (+2k5 code)
 //  #define USE_MAX17043                           // [I2cDriver83] Enable MAX17043 fuel-gauge systems Lipo batteries sensor (I2C address 0x36) (+0k9 code)
 //  #define MAX17043_ALERT_THRESHOLD 32            // [I2cDriver83] Define the alert threshold for low battery level percentage 1-32
-//  #define USE_AMSX915                            // [I2CDriver86] Enable AMS5915/AMS6915 pressure/temperature sensor (+1k2 code)
 
 //  #define USE_RTC_CHIPS                          // Enable RTC chip support and NTP server - Select only one
 //    #define USE_DS3231                           // [I2cDriver26] Enable DS3231 RTC (I2C address 0x68) (+1k2 code)
@@ -1098,7 +1086,6 @@
 #endif
 
 #define USE_ESP32_SENSORS                        // Add support for ESP32 temperature and optional hall effect sensor
-#define USE_GPIO_VIEWER                          // Enable GPIO Viewer to see realtime GPIO states (+5k6 code)
 
 // #define USE_DALI                              // Add support for DALI
     #define DALI_IN_INVERT  0                 // DALI RX inverted ?
@@ -1122,7 +1109,7 @@
 //  #define ETH_ADDRESS       0                    // [EthAddress] 0 = PHY0 .. 31 = PHY31
 //  #define ETH_CLKMODE       0                    // [EthClockMode] 0 = ETH_CLOCK_GPIO0_IN, 1 = ETH_CLOCK_GPIO0_OUT, 2 = ETH_CLOCK_GPIO16_OUT, 3 = ETH_CLOCK_GPIO17_OUT
 
-#define USE_ADC                                  // Add support for ADC on GPIO32 to GPIO39
+// #define USE_ADC                                  // Add support for ADC on GPIO32 to GPIO39
 
 #define USE_NETWORK_LIGHT_SCHEMES                // Add support for light schemes via DDP (via UDP on port 4048)
 
@@ -1150,8 +1137,6 @@
     #define USE_BERRY_WEBCLIENT_TIMEOUT  2000    // Default timeout in milliseconds
     // #define USE_BERRY_PARTITION_WIZARD           // Add a button to dynamically load the Partion Wizard from a bec file online (+1.3KB Flash)
     #define USE_BERRY_PARTITION_WIZARD_URL      "http://ota.tasmota.com/tapp/partition_wizard.bec"
-    //#define USE_BERRY_GPIOVIEWER                 // Add a button to dynamocally load the GPIO Viewer from a bec file online
-    #define USE_BERRY_GPIOVIEWER_URL            "http://ota.tasmota.com/tapp/gpioviewer.bec"
   // #define USE_BERRY_TCPSERVER                    // Enable TCP socket server (+0.6k)
   // #define USE_BERRY_ULP                          // Enable ULP (Ultra Low Power) support (+4.9k)
   // Berry crypto extensions below:
@@ -1170,7 +1155,7 @@
 
 // -- LVGL Graphics Library ---------------------------------
   // #define USE_LVGL                                 // LVGL Engine, requires Berry (+382KB)
-  #define USE_LVGL_PSRAM                         // Allocate LVGL memory in PSRAM if PSRAM is connected - this might be slightly slower but leaves main memory intact
+  // #define USE_LVGL_PSRAM                         // Allocate LVGL memory in PSRAM if PSRAM is connected - this might be slightly slower but leaves main memory intact
   // #define USE_LVGL_HASPMOTA                      // Enable OpenHASP compatiblity and Robotocondensed fonts (+90KB flash)
   #define USE_LVGL_MAX_SLEEP  10                 // max sleep in ms when LVGL is enabled, more than 10ms will make display less responsive
   #define USE_LVGL_PNG_DECODER                   // include a PNG image decoder from file system (+16KB)
@@ -1184,18 +1169,14 @@
   #define USE_LVGL_BG_DEFAULT 0x000000           // Default color for the uninitialized background screen (black)
   // Disabling select widgets that will be rarely used in Tasmota (-13KB)
   // Main widgets as defined in LVGL8
-    #define BE_LV_WIDGET_OBJ
     #define BE_LV_WIDGET_ARC
     #define BE_LV_WIDGET_BAR
-    #define BE_LV_WIDGET_BTN        // LVGL 8
-    #define BE_LV_WIDGET_BUTTON     // LVGL 9
-    #define BE_LV_WIDGET_BTNMATRIX  // LVGL 8
-    #define BE_LV_WIDGET_BUTTONMATRIX // LVGL 9
+    #define BE_LV_WIDGET_BTN
+    #define BE_LV_WIDGET_BTNMATRIX
     #define BE_LV_WIDGET_CANVAS
     #define BE_LV_WIDGET_CHECKBOX
     #define BE_LV_WIDGET_DROPDOWN
-    #define BE_LV_WIDGET_IMG        // LVGL 8
-    #define BE_LV_WIDGET_IMAGE      // LVGL 9
+    #define BE_LV_WIDGET_IMG
     #define BE_LV_WIDGET_LABEL
     #define BE_LV_WIDGET_LINE
     #define BE_LV_WIDGET_ROLLER
@@ -1204,23 +1185,16 @@
     #define BE_LV_WIDGET_TABLE
     #define BE_LV_WIDGET_TEXTAREA
 
-    #define BE_LV_WIDGET_ANIMIMG
     #define BE_LV_WIDGET_CHART
     #define BE_LV_WIDGET_COLORWHEEL
-    #define BE_LV_WIDGET_IMGBTN       // LVGL 8
-    #define BE_LV_WIDGET_IMAGEBUTTON  // LVGL 9
-    // #define BE_LV_WIDGET_KEYBOARD
+    #define BE_LV_WIDGET_IMGBTN
     #define BE_LV_WIDGET_LED
-    // #define BE_LV_WIDGET_LIST
     #define BE_LV_WIDGET_METER
     #define BE_LV_WIDGET_MSGBOX
-    #define BE_LV_WIDGET_QRCODE
-    #define BE_LV_WIDGET_SCALE
     #define BE_LV_WIDGET_SPINBOX
     #define BE_LV_WIDGET_SPINNER
-    #define BE_LV_WIDGET_SPANGROUP
-    // #define BE_LV_WIDGET_TABVIEW
-    // #define BE_LV_WIDGET_TILEVIEW
+
+    #define BE_LV_WIDGET_QRCODE
 
 #endif  // ESP32
 
