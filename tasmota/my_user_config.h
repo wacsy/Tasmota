@@ -42,12 +42,12 @@
 \*********************************************************************************************/
 
 // -- Master parameter control --------------------
-#define CFG_HOLDER             2              // [Reset 1] Change this value (max 32000) to load SECTION1 configuration parameters to flash
+#define CFG_HOLDER             3              // [Reset 1] Change this value (max 32000) to load SECTION1 configuration parameters to flash
                                                  // If following define is disabled it increases configuration corruption detection BUT
                                                  //  it only allows firmware upgrades starting from version 6.6.0.11
 
 // -- Project -------------------------------------
-#define PROJECT                "BEDSR-T1"         // PROJECT is used as the default topic delimiter
+#define PROJECT                "BATH-MA"         // PROJECT is used as the default topic delimiter
 
 // If not selected the default will be SONOFF_BASIC
 //#define MODULE                 SONOFF_BASIC      // [Module] Select default module from tasmota_template.h
@@ -57,7 +57,10 @@
 #endif  // ESP8266
 #ifdef ESP32
 #define FALLBACK_MODULE        WEMOS             // [Module2] Select default module on fast reboot where USER_MODULE is user template
-//#define USER_TEMPLATE "{\"NAME\":\"ESP32-DevKit\",\"GPIO\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,0,0,0,0,1,1,1,1,1,0,0,1],\"FLAG\":0,\"BASE\":1}"  // [Template] Set JSON template
+// #define USER_TEMPLATE "{\"NAME\":\"E32-bedsR\",\"GPIO\":[0,0,1,1,33,228,0,0,0,224,1,32,0,0,226,227,0,231,230,261,0,37,233,225,0,0,0,0,1,232,1,163,162,0,0,164],\"FLAG\":0,\"BASE\":1}"
+// {"NAME":"bath_main","GPIO":[1,234,228,1,35,1,224,33,38,230,229,1,40,32,233,36,1,1,1,1,1216,231,0,0,0,225,0,226,170,1,1,1,1,1,227,39,232,1],"FLAG":0,"BASE":1}
+//backlog WebButton1 B1BathLightG15; WebButton2 B1BathFanG4; WebButton3 B2BedLightRG18; WebButton4 B2BedLightLG19; WebButton5 B2RoomLightG5; WebButton6 B2BathLightG23; WebButton7 B2BathFanG22; WebButton8 B2BathMDeFG21; WebButton9 B2BathLEDG33; WebButton10 B1BathLEDG25;
+// backlog WebButton1 MBathFanG6; WebButton2 MBathLightG36; WebButton3 MBathDhumG38; WebButton4 LandLightG45; WebButton5 LandLED; WebButton6 L1Heat; WebButton7 B1BedLeft; WebButton8 B1Room; WebButton9 B1BedRight; WebButton10 B1RoomLED;
 #endif  // ESP32
 
 #define SAVE_DATA              3600                 // [SaveData] Save changed parameters to Flash (0 = disable, 1 - 3600 seconds)
@@ -169,7 +172,7 @@
 // -- HTTP ----------------------------------------
 #define WEB_SERVER             2                 // [WebServer] Web server (0 = Off, 1 = Start as User, 2 = Start as Admin)
 #define WEB_PASSWORD           ""                // [WebPassword] Web server Admin mode Password for WEB_USERNAME (empty string = Disable)
-#define FRIENDLY_NAME          "BEDSR"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
+#define FRIENDLY_NAME          "BATHMA"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
 #define EMULATION              EMUL_NONE         // [Emulation] Select Belkin WeMo (single relay/light) or Hue Bridge emulation (multi relay/light) (EMUL_NONE, EMUL_WEMO or EMUL_HUE)
 #define EMULATION_HUE_1ST_GEN  false             // [Emulation] Force SetOption109 1 - if you only have Echo Dot 2nd gen devices
 //#define USE_CORS                                 // [Cors] Enable CORS - Be aware that this feature is unsecure ATM (https://github.com/arendst/Tasmota/issues/6767)
