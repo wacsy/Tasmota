@@ -97,7 +97,8 @@
 enum TasLoraFlags { 
   TAS_LORA_FLAG_BRIDGE_ENABLED,
   TAS_LORA_FLAG_JOIN_ENABLED,
-  TAS_LORA_FLAG_DECODE_ENABLED
+  TAS_LORA_FLAG_DECODE_ENABLED,
+  TAS_LORA_COMMAND_ENABLED
 };
 
 enum TasLoraWanFlags { 
@@ -190,12 +191,12 @@ typedef struct Lora_t {
   int (* Receive)(char*);
   bool (* Send)(uint8_t*, uint32_t, bool);
   LoraSettings_t settings;                       // Persistent settings
-  uint32_t receive_time;
+  volatile uint32_t receive_time;
   float rssi;
   float snr;
   uint8_t packet_size;                           // Max is 255 (LORA_MAX_PACKET_LENGTH)
   volatile bool received_flag;                   // flag to indicate that a packet was received
-  bool send_flag;
+  volatile bool send_flag;
   bool raw;
 #ifdef USE_LORAWAN_BRIDGE
   uint32_t device_address;

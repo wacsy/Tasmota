@@ -26,10 +26,6 @@
 #define XDRV_03                   3
 #define XSNS_03                   3
 
-#ifndef MQTT_TELE_RETAIN
-#define MQTT_TELE_RETAIN          0
-#endif
-
 #define ENERGY_NONE               0
 #define ENERGY_WATCHDOG           4        // Allow up to 4 seconds before deciding no valid data present
 
@@ -787,7 +783,7 @@ void EnergyMarginCheck(void) {
   }
   if (jsonflg) {
     ResponseJsonEndEnd();
-    MqttPublishPrefixTopicRulesProcess_P(TELE, PSTR(D_RSLT_MARGINS), MQTT_TELE_RETAIN);
+    MqttPublishTele(PSTR(D_RSLT_MARGINS));
     EnergyMqttShow();
     Energy->margin_stable = 3;  // Allow 2 seconds to stabilize before reporting
   }
@@ -803,7 +799,7 @@ void EnergyMarginCheck(void) {
           ResponseTime_P(PSTR(",\"" D_JSON_MAXPOWERREACHED "\":%d}"), energy_power_u);
           MqttPublishPrefixTopicRulesProcess_P(STAT, S_RSLT_WARNING);
           EnergyMqttShow();
-          SetAllPower(POWER_ALL_OFF, SRC_MAXPOWER);
+          SetAllPower(POWER_OFF_FORCE, SRC_MAXPOWER);
           if (!Energy->mplr_counter) {
             Energy->mplr_counter = Settings->param[P_MAX_POWER_RETRY] +1;  // SetOption33 - Max Power Retry count
           }
@@ -830,7 +826,7 @@ void EnergyMarginCheck(void) {
             ResponseTime_P(PSTR(",\"" D_JSON_MAXPOWERREACHEDRETRY "\":\"%s\"}"), GetStateText(0));
             MqttPublishPrefixTopicRulesProcess_P(STAT, S_RSLT_WARNING);
             EnergyMqttShow();
-            SetAllPower(POWER_ALL_OFF, SRC_MAXPOWER);
+            SetAllPower(POWER_OFF_FORCE, SRC_MAXPOWER);
           }
         }
       }
@@ -851,7 +847,7 @@ void EnergyMarginCheck(void) {
       ResponseTime_P(PSTR(",\"" D_JSON_MAXENERGYREACHED "\":%3_f}"), &Energy->daily_sum);
       MqttPublishPrefixTopicRulesProcess_P(STAT, S_RSLT_WARNING);
       EnergyMqttShow();
-      SetAllPower(POWER_ALL_OFF, SRC_MAXENERGY);
+      SetAllPower(POWER_OFF_FORCE, SRC_MAXENERGY);
     }
   }
   EnergyFmtFree();
@@ -876,7 +872,7 @@ void EnergyEverySecond(void) {
 
       AddLog(LOG_LEVEL_DEBUG, PSTR("NRG: Temperature %1_f"), &TasmotaGlobal.temperature_celsius);
 
-      SetAllPower(POWER_ALL_OFF, SRC_OVERTEMP);
+      SetAllPower(POWER_OFF_FORCE, SRC_OVERTEMP);
     }
   }
 
@@ -1375,7 +1371,7 @@ void CmndMaxEnergyStart(void) {
 /********************************************************************************************/
 
 void EnergyDrvInit(void) {
-  Energy = (tEnergy*)calloc(sizeof(tEnergy), 1);    // Need calloc to reset registers to 0/false
+  Energy = (tEnergy*)calloc(1, sizeof(tEnergy));    // Need calloc to reset registers to 0/false
   if (!Energy) { return; }
 
   Energy->value = nullptr;
